@@ -1,0 +1,127 @@
+/* Each cover describes its game; mathematical diagrams keep exact counts. */
+.game-cover { width: 100%; height: 100%; position: relative; z-index: 1; min-width: 0; overflow: hidden; }
+.cover-scene { width: 100%; height: 100%; position: relative; }
+.cover-scene > img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.cover-contain > img { object-fit: contain; padding: 6px 10px 30px; filter: drop-shadow(0 7px 5px #38563d22); }
+.cover-letters { position: absolute; bottom: 6px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; }
+.cover-letters b { min-width: 34px; height: 37px; display: grid; place-items: center; background: #fff; border: 2px solid #e6c874; border-radius: 13px; color: #947232; font-size: 1.4rem; box-shadow: 0 3px 0 #d4b765; }
+.cover-cargo { position: absolute; bottom: 5px; left: 16px; background: #fff9; border-radius: 12px; padding: 4px; }
+.cover-cargo .cover-object-group { display: flex; }
+.cover-photos { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; gap: 7px; padding: 12px; position: relative; }
+.cover-photo { display: block; min-width: 0; border: 4px solid white; box-shadow: 0 5px 8px #364d4c25; overflow: hidden; border-radius: 19px; }
+.cover-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover-photos-bubble .cover-photo { width: 48%; aspect-ratio: 1; border-radius: 50%; border: 5px solid #fff9; }
+.cover-photos-bubble .cover-photo + .cover-photo { transform: translateY(20px); }
+.cover-photos-sound { padding: 10px 15px 30px; }
+.cover-photos-sound .cover-photo { width: 48%; height: 86%; border-radius: 22px; }
+.cover-sound-waves { position: absolute; bottom: 7px; left: 35%; right: 35%; height: 21px; display: flex; gap: 5px; justify-content: center; align-items: center; }
+.cover-sound-waves i { display: block; width: 6px; height: 15px; border-radius: 4px; background: #68a3bf; }
+.cover-sound-waves i:nth-child(2) { height: 23px; }
+.cover-photos-memory { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; padding: 10px 23px; }
+.cover-photos-memory .cover-photo { height: 100%; width: 100%; border-radius: 10px; }
+.cover-photos-memory .cover-photo:nth-child(odd) { transform: rotate(-5deg); }
+.cover-photos-memory .cover-photo:nth-child(even) { transform: rotate(5deg); }
+.cover-photos-gallery { gap: 5px; }
+.cover-photos-gallery .cover-photo { flex: 1; height: 65%; border-radius: 18px; }
+.cover-photos-gallery .cover-photo:nth-child(2) { transform: translateY(-12px); }
+.cover-photos-gallery .cover-photo:nth-child(3) { transform: translateY(10px); }
+.cover-photos-landmarks { gap: 0; padding: 0; }
+.cover-photos-landmarks .cover-photo { border: none; border-radius: 0; box-shadow: none; flex: 1; height: 100%; }
+.cover-photos-landmarks .cover-photo + .cover-photo { border-left: 4px solid white; }
+.cover-traffic { padding: 0; }
+.cover-traffic .cover-photo { border: 0; border-radius: 0; height: 100%; }
+.cover-traffic .mini-traffic-light { right: 14px; top: 12px; }
+.cover-pet { display: grid; place-items: center; width: 100%; height: 100%; position: relative; padding-bottom: 24px; }
+.cover-pet .character-sprite { width: 135px; }
+.cover-pet-objects { position: absolute; bottom: 3px; left: 20%; right: 20%; display: flex; justify-content: center; gap: 8px; }
+.cover-pet-objects > * { border-radius: 11px; background-color: #ffffffb5; }
+.cover-colors { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; gap: 9px; padding: 10px; }
+.cover-color-bubble { width: 54px; height: 54px; background: radial-gradient(circle at 30% 25%, #fff9, transparent 44%), var(--object-color); border: 3px solid #fff9; border-radius: 50%; box-shadow: inset -5px -7px 6px #0001, 0 8px 6px #4767431c; }
+.cover-color-bubble:nth-child(2) { transform: translateY(-20px); }
+.cover-color-bubble:nth-child(3) { transform: translateY(14px); }
+.cover-basket { width: 42%; height: 72px; position: relative; margin-top: 25px; background: repeating-linear-gradient(90deg, #ffffff3d 0 3px, transparent 3px 10px), var(--object-color); border-radius: 6px 6px 20px 20px; border: 4px solid var(--object-color); box-shadow: inset 0 -8px 10px #0001, 0 5px 0 #0001; }
+.cover-basket > span { position: absolute; left: -7px; right: -7px; top: -4px; height: 12px; border-radius: 6px; background: var(--object-color); border: 2px solid #fff6; }
+.cover-basket i { position: absolute; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #fff9, transparent 44%), var(--object-color); top: -30px; left: 8%; border: 2px solid #fff9; }
+.cover-basket i + i { left: 44%; top: -22px; }
+.cover-size { width: 100%; height: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 13px; padding: 26px 12px; }
+.cover-size .learning-photo { border: 4px solid white; }
+.cover-object-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; justify-items: center; align-items: center; }
+.cover-object-group > * { width: 100%; min-width: 0; object-fit: cover; box-shadow: none; border-radius: 7px; }
+.cover-object-group .single-object { object-fit: contain; }
+.cover-count { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 15px; }
+.cover-count .cover-object-group { width: 67%; }
+.cover-number { width: 44px; height: 60px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 16px; color: #fff; background: #70af93; box-shadow: 0 5px 0 #4f8d73; border: 3px solid #a3d3bb; font-size: 2.7rem; line-height: 1; }
+.cover-count-bubble { flex-direction: column; gap: 12px; }
+.cover-count-bubble .cover-object-group { width: 80%; display: flex; justify-content: center; }
+.cover-count-bubble .cover-number { width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #ffffffb3, transparent 55%), #75bede; box-shadow: 0 5px 0 #62a5c2; border: 3px solid #ffffffb8; }
+.cover-compare { width: 100%; height: 100%; padding: 13px; display: flex; align-items: center; position: relative; }
+.cover-compare-groups { display: flex; gap: 10px; width: 100%; align-items: center; }
+.cover-compare-groups > span { flex: 1; min-width: 0; display: flex; align-items: center; flex-direction: column; gap: 6px; padding: 9px 5px; background: #ffffffe0; border: 3px solid #d2dfc9; border-radius: 18px; box-shadow: 0 4px 0 #bcd1b0; }
+.cover-compare-groups .cover-object-group { width: 100%; gap: 3px; }
+.cover-compare-groups b { font-size: 1.35rem; color: #4f8165; line-height: 1.1; }
+.cover-scale { padding-bottom: 35px; }
+.cover-scale .cover-compare-groups > span:first-child { transform: translateY(8px); }
+.cover-scale .cover-compare-groups > span + span { transform: translateY(-6px); }
+.cover-scale-base { width: 75%; height: 8px; position: absolute; left: 12.5%; bottom: 24px; background: #bd9458; border-radius: 4px; transform: rotate(-7deg); box-shadow: 0 3px 0 #96723f; }
+.cover-scale-base i { position: absolute; left: 40%; top: 3px; width: 0; height: 0; border-left: 17px solid transparent; border-right: 17px solid transparent; border-bottom: 22px solid #af854b; transform: rotate(7deg); }
+.cover-shapes { display: flex; justify-content: center; align-items: center; gap: 12px; height: 100%; width: 100%; padding: 12px; }
+.cover-shapes i { display: block; filter: drop-shadow(0 7px 0 #0001); }
+.cover-shape-circle { width: 48px; height: 48px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #ffc49e, #ef8666); }
+.cover-shape-square { width: 47px; height: 47px; border-radius: 7px; background: linear-gradient(135deg, #94c8f0, #639bd8); transform: rotate(-8deg) translateY(14px); }
+.cover-shape-triangle { width: 0; height: 0; border-left: 25px solid transparent; border-right: 25px solid transparent; border-bottom: 47px solid #8fbe79; transform: translateY(-10px); }
+.cover-pattern { height: 100%; width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); align-content: center; justify-items: center; gap: 12px; padding: 14px 17px; }
+.cover-pattern i, .cover-pattern b { width: 38px; height: 38px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #fff8, transparent 55%), var(--object-color); border: 3px solid #fffc; box-shadow: 0 3px 0 #0001; }
+.cover-pattern b { background: #fff; border: 3px dashed #97b393; display: grid; place-items: center; font-size: 1.7rem; color: #567e56; }
+.cover-calendar { width: 82%; margin: 22px auto 0; background: #fff; border: 3px solid #edbf79; border-radius: 17px; padding: 12px; box-shadow: 0 5px 0 #d5a462; position: relative; }
+.calendar-binding { display: flex; gap: 23px; justify-content: center; height: 12px; position: absolute; top: -10px; left: 0; right: 0; }
+.calendar-binding i { height: 18px; width: 7px; background: #947147; border-radius: 6px; }
+.cover-calendar > div + div { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.cover-calendar b { min-height: 30px; border-radius: 6px; display: grid; place-items: center; color: #827253; font-size: .95rem; background: #fff5d8; }
+.cover-calendar b.today { background: #ef986c; color: white; }
+.cover-calendar b:last-child { background: #e6f4dc; color: #6a9c57; }
+.cover-number-match { display: flex; flex-direction: column; justify-content: center; width: 100%; height: 100%; gap: 7px; padding: 10px 15px; }
+.cover-number-match > div { display: flex; align-items: center; gap: 8px; }
+.cover-number-match b { width: 26px; height: 33px; color: #407d70; background: #fff; border-radius: 9px; border: 2px solid #b4d5c2; display: grid; place-items: center; font-size: 1.3rem; flex-shrink: 0; }
+.cover-number-match .cover-object-group { display: flex; }
+.cover-number-match .cover-object-group > * { width: 24px !important; height: 24px !important; }
+.cover-connector { display: block; width: 17px; height: 3px; background: #93bead; flex-shrink: 0; position: relative; }
+.cover-connector::after { content: ''; position: absolute; right: -2px; top: -3px; border-left: 6px solid #93bead; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+.cover-food { display: grid; grid-template-columns: repeat(2, 1fr); justify-items: center; align-content: center; gap: 4px; height: 100%; width: 100%; padding: 10px 24px; }
+.cover-food .learning-food { max-width: 100%; border-radius: 12px; background-color: #fff9; }
+.cover-dots { width: 100%; height: 100%; padding: 4px 14px; }
+@media (max-width: 500px) {
+  .cover-pet .character-sprite { width: 115px; }
+  .cover-pet-objects { left: 12%; right: 12%; }
+  .cover-pet-objects > * { width: 36px !important; height: 36px !important; }
+  .cover-letters { gap: 4px; }
+  .cover-letters b { min-width: 29px; height: 32px; font-size: 1.15rem; }
+  .cover-photos-memory { padding: 10px 15px; }
+  .cover-colors { gap: 6px; }
+  .cover-color-bubble { width: 38px; height: 38px; }
+  .cover-size { gap: 8px; padding: 25px 8px; }
+  .cover-size .learning-photo:first-child { width: 78px; height: 78px; }
+  .cover-size .learning-photo + .learning-photo { width: 36px; height: 36px; }
+  .cover-count { padding: 10px; gap: 7px; }
+  .cover-count:not(.cover-count-bubble) .cover-number { width: 32px; height: 48px; font-size: 2rem; border-radius: 12px; }
+  .cover-compare { padding: 10px 8px; }
+  .cover-scale { padding-bottom: 35px; }
+  .cover-compare-groups { gap: 7px; }
+  .cover-compare-groups > span { padding: 7px 4px; border-width: 2px; border-radius: 13px; }
+  .cover-compare-groups .learning-photo { height: 20px; }
+  .cover-shapes { gap: 7px; }
+  .cover-shape-circle { width: 36px; height: 36px; }
+  .cover-shape-square { width: 35px; height: 35px; }
+  .cover-shape-triangle { border-left-width: 20px; border-right-width: 20px; border-bottom-width: 37px; }
+  .cover-pattern { gap: 9px; padding: 14px; }
+  .cover-pattern i, .cover-pattern b { width: 31px; height: 31px; }
+  .cover-calendar { padding: 9px; width: 86%; }
+  .cover-calendar b { min-height: 25px; font-size: .8rem; }
+  .cover-number-match { padding: 10px; gap: 7px; }
+  .cover-number-match > div { gap: 4px; }
+  .cover-number-match .cover-object-group { gap: 2px; }
+  .cover-number-match .cover-object-group > * { width: 22px !important; height: 22px !important; }
+  .cover-number-match .cover-connector { width: 11px; }
+  .cover-food { padding: 10px 15px; }
+  .cover-food .learning-food { width: 53px !important; height: 53px !important; }
+}
+

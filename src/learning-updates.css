@@ -1,0 +1,36 @@
+.card-visual-media .picture-number { display: grid; place-items: center; width: 105px; height: 105px; font-size: 82px !important; color: #367963; background: linear-gradient(145deg, #fff9d6, #ffda8f); border: 3px solid white; border-radius: 24px; box-shadow: 0 6px 0 #deb367; font-variant-numeric: lining-nums; }
+.alphabet-target-letter { display: grid; place-items: center; background: #e6f6db; color: #345d42; border: 3px solid #fff; border-radius: 18px; min-width: 72px; min-height: 72px; padding: 8px 14px; font-size: 3rem; line-height: 1.3; }
+.tree-apple-btn .apple-skin { width: 86px; height: 86px; object-fit: contain; pointer-events: none; }
+.tree-apple-btn { width: 86px; height: 86px; touch-action: manipulation; }
+.tree-apple-btn .apple-letter { font-size: 2.1rem; line-height: 1.5; padding: 3px 8px; overflow: visible; }
+.tree-apple-btn.apple-incorrect { animation: letterTryAgain .4s ease-in-out; }
+@keyframes letterTryAgain { 0%,100% { transform: translate(-50%, -50%); } 30% { transform: translate(-58%, -50%); } 65% { transform: translate(-42%, -50%); } }
+.number-sequence, .fruit-pattern { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; flex-basis: 100%; padding: 15px 0 4px; }
+.number-sequence b, .fruit-pattern > b { display: grid; place-items: center; color: #417c66; background: #fff7dc; border: 3px solid #fff; border-radius: 18px; width: 68px; height: 76px; box-shadow: 0 5px 0 #dbbc7c; font-size: 2.8rem; }
+.number-sequence b.missing { border: 3px dashed #6caa8b; background: #ebf6ef; }
+.fruit-pattern { gap: 7px; }
+.fruit-pattern > b { width: 44px; height: 54px; font-size: 2rem; }
+.fruit-pattern img { object-fit: contain; }
+.picture-group { max-width: 180px; }
+.cover-sequence { display: flex; align-items: center; justify-content: center; gap: 9px; height: 100%; padding: 12px; }
+.cover-sequence b { display: grid; place-items: center; flex: 1; max-width: 55px; height: 64px; border: 3px solid white; border-radius: 15px; color: #47745c; background: #fff9d5; box-shadow: 0 5px 0 #dfc788; font-size: 2rem; }
+.cover-sequence .missing { background: #edf8ec; border: 2px dashed #69a781; }
+.cover-number-memory { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; height: 100%; padding: 14px 36px; }
+.cover-number-memory b { display: grid; place-items: center; background: white; color: #567993; border: 3px solid #b0d1df; border-radius: 12px; box-shadow: 0 4px 0 #aed0d9; font-size: 1.8rem; }
+.cover-fruit-pattern { display: grid; grid-template-columns: repeat(3, 1fr); align-content: center; justify-items: center; gap: 9px; height: 100%; padding: 12px 26px; }
+.cover-fruit-pattern b { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 2px dashed #68a782; color: #588d6e; background: white; font-size: 1.5rem; }
+.cover-number-match .cover-object-group { flex-wrap: wrap; }
+@media (max-width: 500px) {
+  .tree-apple-btn { width: 74px; height: 74px; }
+  .tree-apple-btn .apple-skin { width: 74px; height: 74px; }
+  .tree-apple-btn .apple-letter { font-size: 1.9rem; }
+  .alphabet-target-letter { min-width: 64px; min-height: 64px; font-size: 2.7rem; }
+  .cover-number-memory { padding: 12px 24px; gap: 7px; }
+  .cover-sequence { gap: 5px; padding: 10px; }
+  .cover-sequence b { font-size: 1.65rem; height: 54px; }
+  .cover-fruit-pattern { padding: 10px 17px; gap: 5px; }
+  .fruit-pattern .learning-photo { width: 42px; height: 42px; }
+  .fruit-pattern > b { width: 36px; height: 44px; }
+  .card-visual-media .picture-number { width: 85px; height: 88px; font-size: 68px !important; }
+}
+@media (prefers-reduced-motion: reduce) { .tree-apple-btn.apple-incorrect { animation: none; } }

@@ -1,0 +1,13 @@
+# Netlify: build bằng Vite, xuất ra dist/, máy chủ nhỏ (Netlify Functions) trong netlify/functions/.
+# Khóa 34AI mặc định: biến môi trường AI34_API_KEY (Site configuration → Environment variables),
+# hoặc chạy scripts/dat-khoa-netlify.mjs (trien-khai-netlify.cmd tự hỏi lần đầu).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[build.environment]
+  NODE_VERSION = "20"

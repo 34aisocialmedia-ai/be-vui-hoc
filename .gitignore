@@ -1,0 +1,33 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars*
+.env*
+!.env.example
+*.key
+
+# Python
+__pycache__/
+scripts/.vendor/
+
+# Raw recordings and models for producing Cô Thủy's voice (large, kept on this computer only)
+review/co-thuy-batches/
+review/co-thuy-staging/
+review/co-thuy-pilot-clips/
+review/vosk-models/
+review/whisper-models/
+review/legacy-audio/
+review/*.wav
+review/*.zip
+review/*.log
+review/fluent-asset-tree.json
+
+# Copies made before the project used Git
+backup-truoc-*/
+source-before-ux-review.zip
+
+# Ma cai dat lan dau cua Xuong sang tao (dung mot lan, tu xoa)
+MA-CAI-DAT-XUONG.txt
+
+# Netlify CLI (gan thu muc voi trang Netlify)
+.netlify/
