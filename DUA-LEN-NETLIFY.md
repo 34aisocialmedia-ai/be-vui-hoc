@@ -52,3 +52,9 @@ Những lần sau chỉ cần bấm đúp lại; script không hỏi lại các 
 - Đã đóng gói thử bằng đúng bộ đóng gói của Netlify (zip-it-and-ship-it): cả hai hàm nhận đúng đường dẫn.
 
 `trien-khai-dev.cmd` (Cloudflare) vẫn còn nhưng không cần dùng nữa.
+
+## Cập nhật 24/10/2026: Netlify tự build từ GitHub
+
+- Mã nguồn nằm ở repo công khai `34aisocialmedia-ai/be-vui-hoc`. Netlify (trang `behocvuicungnhau`) đã được nối với repo này.
+- Mỗi lần có commit mới trên nhánh `main`, Netlify tự build và đưa lên https://behocvuicungnhau.netlify.app. Không cần chạy `trien-khai-netlify.cmd` nữa.
+- Khóa 34AI mặc định là biến bí mật `AI34_API_KEY`, đặt trong Netlify → Project configuration → Environment variables. Khóa không nằm trong repo.
