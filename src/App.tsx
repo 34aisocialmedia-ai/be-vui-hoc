@@ -13,7 +13,7 @@ import { Mascot } from './Mascot'
 import { TEACHER_INTRO } from './teacherVoice'
 import { HomeWebsite, GameLibrary } from './components/HomeWebsite'
 import { ToyShelf } from './components/ToyShelf'
-import { PlaytestPanel } from './components/PlaytestPanel'
+import { AdultPage } from './components/AdultPage'
 import { EpisodeIntro, FRIEND_NAMES, FriendHouse, IslandMap, MovieList, defaultFriend, type Win } from './components/Modes'
 import { MODES, episodesFor, journeyFor, modeOf, nextJourney, wishesFor, type ModeId } from './modes'
 import type { Finale } from './player/types'
@@ -287,99 +287,8 @@ export default function App() {
       break
 
     case 'adult':
-      screen = (
-        <div className="screen scroll">
-          <Back onClick={() => go({ n: 'home' })} />
-          <img className="adult-logo" src="/assets/brand/logo-duong-thuy.webp" alt="Logo Dương Thủy" width="512" height="512" />
-          <h1 className="h rainbow-title">Cài Đặt Dành Cho Người Lớn</h1>
-          <button className="studio-entry" onClick={() => go({ n: 'studio' })}><img src="/assets/images/mascot_rabbit.webp" alt=""/><div><strong>Xưởng sáng tạo AI · 34AI</strong><span>Ảnh có bé · Video · Giọng nói · Tạo trò chơi từ ý tưởng</span></div><UiIcon name="next"/></button>
-          <div className="panel panel-3d">
-            <label>
-              <input
-                type="checkbox"
-                checked={save.settings.sound}
-                onChange={(e) => update((s) => ({ ...s, settings: { ...s.settings, sound: e.target.checked } }))}
-              />
-              <b>Bật âm thanh và hướng dẫn tiếng Việt</b>
-            </label>
-
-            <div className="voice-setting-box">
-              <div className="voice-setting-title">🎙️ Giọng cô giáo</div>
-              <div className="voice-card selected">
-                <div className="voice-card-name">👩 Cô Thủy</div>
-                <p className="voice-card-desc">Giọng nữ rõ ràng, ấm áp và vui tươi. Cô Thủy đồng hành cùng con khi học và chơi.</p>
-                <button className="btn-test-voice" onClick={() => save.settings.sound && speak(TEACHER_INTRO)}>🔊 Nghe cô Thủy</button>
-              </div>
-            </div>
-
-            <label style={{ marginTop: '14px' }}>
-              <input
-                type="checkbox"
-                checked={save.settings.rewards}
-                onChange={(e) => update((s) => ({ ...s, settings: { ...s.settings, rewards: e.target.checked } }))}
-              />
-              <b>Phần thưởng sau khi hoàn thành lượt chơi</b>
-            </label>
-            <label>
-              <b>Hẹn giờ nhắc nghỉ mắt sau:</b>&nbsp;
-              <select
-                value={save.settings.limit}
-                onChange={(e) => update((s) => ({ ...s, settings: { ...s.settings, limit: Number(e.target.value) } }))}
-              >
-                <option value={0}>Tắt hẹn giờ</option>
-                <option value={5}>5 phút</option>
-                <option value={10}>10 phút</option>
-                <option value={15}>15 phút</option>
-                <option value={20}>20 phút</option>
-              </select>
-            </label>
-            <label>
-              <b>Hiệu ứng chuyển động:</b>&nbsp;
-              <select
-                value={save.settings.motion}
-                onChange={(e) => update((s) => ({ ...s, settings: { ...s.settings, motion: e.target.value as MotionLevel } }))}
-              >
-                <option value="full">Đầy đủ</option>
-                <option value="light">Nhẹ (chỉ mờ dần, đổi màu)</option>
-                <option value="off">Tắt</option>
-              </select>
-            </label>
-          </div>
-
-          <PlaytestPanel />
-
-          <h2 className="dom" style={{ background: '#74CBF4', marginTop: '24px' }}>
-            Danh Mục {GAMES.length} Trò Chơi (Bám Sát Giáo Án)
-          </h2>
-          <div className="adult-table-scroll"><table className="tbl">
-            <thead>
-              <tr>
-                <th>Trò chơi</th>
-                <th>Dạng</th>
-                <th>Tuổi</th>
-                <th>Mục tiêu MT</th>
-                <th>Số câu</th>
-                <th>Đã chơi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {GAMES.map((g) => (
-                <tr key={g.id}>
-                  <td>{g.icon} {g.title}</td>
-                  <td><span className="engine-pill">{g.engine}</span></td>
-                  <td>{g.age}</td>
-                  <td><b>{g.mt.join(', ')}</b></td>
-                  <td>{totalOf(g)}</td>
-                  <td>{save.plays[g.id] ?? 0}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-          <p className="note" style={{ marginTop: '16px' }}>
-            Tiến độ chơi và thư viện gia đình được lưu trên thiết bị. Khi người lớn dùng tạo nội dung AI, mô tả và ảnh đã chọn sẽ được gửi đến Google theo xác nhận trong xưởng.
-          </p>
-        </div>
-      )
+      screen = <AdultPage settings={save.settings} plays={save.plays} onBack={() => go({ n: 'home' })} onStudio={() => go({ n: 'studio' })}
+        onChange={patch => update(s => ({ ...s, settings: { ...s.settings, ...patch } }))} />
       break
   }
 
