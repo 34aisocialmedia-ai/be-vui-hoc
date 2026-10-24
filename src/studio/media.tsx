@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 
 /**
  * The family library, kept only on this device (IndexedDB): pictures, videos, voice clips and
@@ -8,13 +8,15 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
  *   hello           the greeting played by the banner's speaker button (voice)
  *   home            a family game shown on the home page (game)
  *   voice:<gameId>  a voice clip read in a family game (voice; `prompt` holds the line)
+ *   scene:<gameId>  a picture drawn for a family game (its cover, answers and question pictures)
+ *   person:<id>     a photo of the child (be) or a relative (p1–p3), kept for the next "game with my child"
  */
 export type AssetKind = 'image' | 'video' | 'audio' | 'game'
 export interface StudioAsset { id: string; title: string; prompt: string; kind: AssetKind; source: 'google' | 'upload' | 'ai34' | 'gemini'; created: number; blob: Blob; target?: string; jobId?: string }
 export interface DisplayAsset extends StudioAsset { url: string }
 
-const MAX_ITEMS = 60
-const MAX_BYTES = 200 * 1024 * 1024
+const MAX_ITEMS = 400
+const MAX_BYTES = 500 * 1024 * 1024
 
 function database(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -41,7 +43,7 @@ async function mutate(fn: (store: IDBObjectStore) => void) {
 /** Which kinds may be used at a target. */
 export function fits(kind: AssetKind, target: string) {
   if (target === 'banner') return kind === 'image' || kind === 'video'
-  if (target.startsWith('game:')) return kind === 'image'
+  if (target.startsWith('game:') || target.startsWith('scene:')) return kind === 'image'
   if (target === 'hello' || target.startsWith('voice:')) return kind === 'audio'
   if (target === 'home') return kind === 'game'
   return false
@@ -58,23 +60,30 @@ const MediaContext = createContext<MediaState>({ assets: [], error: '', loading:
 
 export function MediaProvider({ children }: { children: ReactNode }) {
   const [assets, setAssets] = useState<DisplayAsset[]>([]), [loading, setLoading] = useState(true), [error, setError] = useState('')
-  const show = (rows: StudioAsset[]) => rows.sort((a, b) => b.created - a.created).map(a => ({ ...a, url: URL.createObjectURL(a.blob) }))
-  async function refresh() { const rows = await readAssets(); setAssets(old => { old.forEach(a => URL.revokeObjectURL(a.url)); return show(rows) }) }
+  // Object URLs are kept for items that stay (a game being played keeps its pictures while new items are saved).
+  const urls = useRef(new Map<string, string>())
+  const show = (rows: StudioAsset[]) => {
+    const next = new Map<string, string>()
+    const list = rows.sort((a, b) => b.created - a.created).map(a => { const url = urls.current.get(a.id) ?? URL.createObjectURL(a.blob); next.set(a.id, url); return { ...a, url } })
+    for (const [id, url] of urls.current) if (!next.has(id)) URL.revokeObjectURL(url)
+    urls.current = next
+    return list
+  }
+  async function refresh() { const rows = await readAssets(); setAssets(show(rows)) }
   useEffect(() => {
     let active = true
     readAssets().then(rows => { if (active) setAssets(show(rows)) }).catch(e => { if (active) setError(e.message) }).finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
+    return () => { active = false; urls.current.forEach(url => URL.revokeObjectURL(url)); urls.current = new Map() }
   }, [])
-  useEffect(() => () => assets.forEach(a => URL.revokeObjectURL(a.url)), [assets])
   const value: MediaState = {
     assets, error, loading,
     add: async asset => {
-      if (assets.length >= MAX_ITEMS || assets.reduce((s, a) => s + a.blob.size, 0) + asset.blob.size > MAX_BYTES) throw new Error('Thư viện đã đầy (60 nội dung hoặc 200 MB). Hãy tải xuống và xóa bớt.')
+      if (assets.length >= MAX_ITEMS || assets.reduce((s, a) => s + a.blob.size, 0) + asset.blob.size > MAX_BYTES) throw new Error('Thư viện đã đầy (400 nội dung hoặc 500 MB). Hãy xóa bớt trò chơi hoặc ảnh cũ.')
       await mutate(s => s.put(asset)); await refresh()
     },
     remove: async id => {
-      // Removing a game also removes the voice clips made for it.
-      await mutate(s => { const req = s.getAll(); req.onsuccess = () => { for (const a of req.result as StudioAsset[]) if (a.id === id || a.target === `voice:${id}`) s.delete(a.id) } })
+      // Removing a game also removes the voice clips and pictures made for it.
+      await mutate(s => { const req = s.getAll(); req.onsuccess = () => { for (const a of req.result as StudioAsset[]) if (a.id === id || a.target === `voice:${id}` || a.target === `scene:${id}`) s.delete(a.id) } })
       await refresh()
     },
     assign: async (id, target) => {

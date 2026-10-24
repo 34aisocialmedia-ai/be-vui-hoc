@@ -11,13 +11,14 @@ import {
 } from './ai34'
 import { GAME_TEMPLATES, IMAGE_TEMPLATES, VIDEO_TEMPLATES, VOICE_TEMPLATES, fill, type Template } from './templates'
 import { readSpec, spokenLinesOf, toGame } from './familyGames'
+import { GameWizard } from './GameWizard'
 
 type Tab = 'image' | 'video' | 'audio' | 'game'
 const TABS: { id: Tab; icon: string; title: string; hint: string }[] = [
   { id: 'image', icon: '🖼️', title: 'Tạo ảnh', hint: 'Đưa bé vào trò chơi, banner, bìa' },
   { id: 'video', icon: '🎬', title: 'Tạo video', hint: 'Bé chuyển động, hoạt cảnh ngắn' },
   { id: 'audio', icon: '🎙️', title: 'Giọng nói', hint: 'Lời chào, lời khen có tên bé' },
-  { id: 'game', icon: '🎲', title: 'Tạo trò chơi', hint: 'Nhập ý tưởng, có ngay trò mới' },
+  { id: 'game', icon: '🎲', title: 'Trò chơi biểu tượng', hint: 'Chỉ từ ý tưởng, không cần ảnh' },
 ]
 const RATIO_LABEL: Record<string, string> = { '16:9': 'Ngang 16:9', '9:16': 'Dọc 9:16', '1:1': 'Vuông 1:1', '4:3': '4:3', '3:4': '3:4' }
 const INPUT_MODE: Record<string, string> = { auto: 'Tự động', text: 'Chỉ theo mô tả', first_frame: 'Ảnh là khung hình đầu', first_last: 'Ảnh đầu và ảnh cuối', ingredients: 'Ghép nhân vật từ ảnh' }
@@ -69,6 +70,8 @@ export default function Studio({ onBack, onPlayGame }: { onBack: () => void; onP
   const activeModels = provider === 'gemini' ? gemini : models
   const activeCatalog = provider === 'gemini' ? (gemini ? { ...gemini.audio, raw: null } : null) : catalog
   const [tab, setTab] = useState<Tab>('image')
+  // The main job of the studio is the one-click "game with my child"; single tools come second.
+  const [mode, setMode] = useState<'wizard' | 'tools'>('wizard')
   const [childName, setChildName] = useState(() => { try { return localStorage.getItem('be-vui-hoc-child-name') ?? '' } catch { return '' } })
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState('')
   const [pending, setPending] = useState<PendingJob[]>(readPending)
@@ -172,10 +175,19 @@ export default function Studio({ onBack, onPlayGame }: { onBack: () => void; onP
       <div><span className="studio-eyebrow">DÀNH CHO PHỤ HUYNH & GIÁO VIÊN</span><h1>Xưởng sáng tạo AI</h1></div>
       <span className={`studio-status ${unlocked && sources.length ? 'is-on' : ''}`}>{!keys || !unlocked ? 'Đang kiểm tra…' : sources.length ? `Sẵn sàng: ${sources.map(p => PROVIDER_LABEL[p]).join(' · ')}` : 'Chưa có khóa API'}</span>
     </header>
-    <p className="studio-lead">Tải ảnh của bé, chọn một mẫu có sẵn, AI tạo ảnh, video, giọng nói hoặc cả một trò chơi mới. Kết quả lưu trên thiết bị này và dùng được ngay trong app.</p>
+    <p className="studio-lead">Tải ảnh của bé và người thân, chọn chủ đề, bấm một nút: AI tạo trọn bộ trò chơi có chính bé trong từng bức tranh. Kết quả lưu trên thiết bị này và hiện ngay trên trang chủ.</p>
 
     {keyView && <KeyPanel view={keyView} code={code} busy={busy} run={run} setMessage={setMessage} onSaved={view => { setKeyView(view); void loadModels(view) }} />}
 
+    <nav className="xs-mode" aria-label="Chế độ xưởng">
+      <button aria-pressed={mode === 'wizard'} className={mode === 'wizard' ? 'selected' : ''} onClick={() => setMode('wizard')}><span aria-hidden="true">🌟</span><b>Tạo trò chơi có bé</b><small>Tải ảnh, bấm một nút, AI làm cả bộ</small></button>
+      <button aria-pressed={mode === 'tools'} className={mode === 'tools' ? 'selected' : ''} onClick={() => setMode('tools')}><span aria-hidden="true">🧰</span><b>Công cụ lẻ</b><small>Ảnh, video, giọng nói riêng</small></button>
+    </nav>
+
+    {mode === 'wizard' && <GameWizard code={code} unlocked={unlocked && available.ai34} models={models} voices={catalog?.voices ?? []} voiceModel={catalog?.models[0]?.id}
+      childName={childName} setChildName={setChildName} onPlayGame={onPlayGame} setMessage={setMessage} setError={setError} />}
+
+    {mode === 'tools' && <>
     <label className="xs-child">Tên gọi của bé (dùng trong mẫu)<input value={childName} maxLength={30} onChange={e => setChildName(e.target.value)} placeholder="Ví dụ: Na, Bin, Su" /></label>
 
     {sources.length > 1 && <div className="xs-chips xs-provider" role="group" aria-label="Nguồn AI"><b>Dùng AI của:</b>{sources.map(p => <button key={p} aria-pressed={provider === p} className={provider === p ? 'selected' : ''} onClick={() => setChosen(p)}>{PROVIDER_LABEL[p]}</button>)}</div>}
@@ -201,6 +213,7 @@ export default function Studio({ onBack, onPlayGame }: { onBack: () => void; onP
           : !pending.length && <div className="studio-empty"><img src="/assets/images/mascot_rabbit.webp" alt="" /><h3>Một ý tưởng nhỏ,<br />một thế giới mới</h3><p>Kết quả sẽ hiện ở đây. Có thể rời trang trong lúc chờ video; quay lại sẽ nhận tiếp.</p></div>}
       </section>
     </div>
+    </>}
 
     <div aria-live="polite" className="studio-feedback">{busy && <p role="status">Đang xử lý…</p>}{message && <p className="studio-success">{message}</p>}{(error || media.error) && <p role="alert" className="studio-error">{error || media.error}</p>}</div>
 
@@ -437,7 +450,8 @@ function Library({ code, provider, unlocked, catalog, busy, run, onPlayGame, set
   const media = useStudioMedia()
   const [filter, setFilter] = useState<AssetKind | 'all'>('all'), [selected, setSelected] = useState(''), [deleting, setDeleting] = useState(''), [cover, setCover] = useState('')
   const [spec, setSpec] = useState<FamilyGame | null>(null), [voice, setVoice] = useState('')
-  const shown = media.assets.filter(a => !a.target?.startsWith('voice:') && (filter === 'all' || a.kind === filter))
+  const coverOf = (id: string) => media.assets.find(x => x.target === `scene:${id}` && x.title.endsWith('· bìa'))?.url
+  const shown = media.assets.filter(a => !/^(voice|scene|person):/.test(a.target ?? '') && (filter === 'all' || a.kind === filter))
   const item = media.assets.find(a => a.id === selected)
   useEffect(() => { setSpec(null); if (item?.kind === 'game') void readSpec(item).then(setSpec) }, [item?.id])
   const voiceClips = useMemo(() => item ? media.assets.filter(a => a.target === `voice:${item.id}`) : [], [media.assets, item?.id])
@@ -468,13 +482,13 @@ function Library({ code, provider, unlocked, catalog, busy, run, onPlayGame, set
     })
   }
   return <section className="studio-library">
-    <div className="studio-library-heading"><h2>Thư viện của gia đình</h2><span>{media.assets.length}/60 nội dung</span></div>
+    <div className="studio-library-heading"><h2>Thư viện của gia đình</h2><span>{media.assets.filter(a => !/^(voice|scene|person):/.test(a.target ?? '')).length} nội dung</span></div>
     <p>Chỉ lưu trên thiết bị này. Ảnh, video, giọng nói và trò chơi ở đây dùng được ngay trong app.</p>
     <div className="xs-chips" role="group" aria-label="Lọc thư viện">{(['all', 'image', 'video', 'audio', 'game'] as const).map(k => <button key={k} aria-pressed={filter === k} className={filter === k ? 'selected' : ''} onClick={() => setFilter(k)}>{k === 'all' ? 'Tất cả' : KIND_LABEL[k]}</button>)}
       <label className="xs-import">＋ Thêm ảnh có sẵn<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={busy} onChange={e => { void importFile(e.target.files?.[0]); e.target.value = '' }} /></label></div>
     {!shown.length && <p className="studio-note">{media.loading ? 'Đang mở thư viện…' : 'Chưa có nội dung.'}</p>}
     <div className="studio-gallery">{shown.map(a => <button key={a.id} className={selected === a.id ? 'selected' : ''} aria-pressed={selected === a.id} onClick={() => { setSelected(a.id); setDeleting(''); setCover('') }}>
-      {a.kind === 'image' ? <img src={a.url} alt={a.title} loading="lazy" /> : a.kind === 'video' ? <video src={a.url} preload="metadata" muted /> : <span className="xs-tile-icon" aria-hidden="true">{a.kind === 'audio' ? '🎙️' : '🎲'}</span>}
+      {a.kind === 'image' ? <img src={a.url} alt={a.title} loading="lazy" /> : a.kind === 'video' ? <video src={a.url} preload="metadata" muted /> : (a.kind === 'game' && coverOf(a.id) ? <img src={coverOf(a.id)} alt="" loading="lazy" /> : <span className="xs-tile-icon" aria-hidden="true">{a.kind === 'audio' ? '🎙️' : '🎲'}</span>)}
       <span>{a.title}</span><small>{KIND_LABEL[a.kind]}{a.target ? ' · Đang dùng' : ''}</small>
     </button>)}</div>
     {item && <div className="studio-asset-detail">

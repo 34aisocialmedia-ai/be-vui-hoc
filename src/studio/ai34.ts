@@ -150,5 +150,19 @@ export async function preparePicture(file: File): Promise<{ blob: Blob; url: str
 }
 
 /* ---------- Games made from an idea ---------- */
-export interface FamilyOption { label: string; correct: boolean; emoji?: string; family?: number }
-export interface FamilyGame { title: string; intro: string; icon: string; age: '24-36' | '3-4' | '4-5' | '5-6'; questions: { text: string; options: FamilyOption[] }[]; photos?: string[] }
+export interface FamilyOption { label: string; correct: boolean; emoji?: string; family?: number; /** A picture drawn for this game (library asset id). */ asset?: string }
+export interface FamilyGame {
+  title: string; intro: string; icon: string; age: '24-36' | '3-4' | '4-5' | '5-6'
+  /** `show`: a picture drawn for this game shown above the question (library asset id). */
+  questions: { text: string; options: FamilyOption[]; show?: string }[]
+  photos?: string[]
+  /** Cover picture drawn for this game (library asset id) and who is in it. */
+  cover?: string; people?: string[]
+}
+/** The script the AI writes for a "game with my child": scenes to draw + questions using them. */
+export interface PlanScene { id: string; scene: string; people: string[]; fallback: string }
+export interface GamePlan {
+  title: string; intro: string; icon: string; age: FamilyGame['age']
+  cover: { scene: string; people: string[] }; scenes: PlanScene[]
+  questions: { text: string; show?: string; options: { label: string; correct: boolean; scene?: string; emoji?: string }[] }[]
+}

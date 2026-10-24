@@ -3,7 +3,7 @@
 // or set as the old secret AI34_API_KEY. It is never sent to the browser.
 //   AI34_CHAT_MODEL     optional: chat model id used to write games (default: the first chat model)
 import { Ai34Error, createAi34, friendly, publicJob } from '../../../lib/ai34.js'
-import { gameMessages, parseGame, validateIdea } from '../../../lib/family-game.js'
+import { gameMessages, parseGame, parsePlan, planMessages, validateIdea, validatePlanRequest } from '../../../lib/family-game.js'
 import { access, deviceOf, publicState } from '../../../lib/keystore.js'
 import { safePrompt } from '../../../lib/safe-prompt.js'
 
@@ -132,6 +132,18 @@ export async function handle(request, env, makeClient = createAi34) {
       const reply = await ai.chat({ model: chosen.id, messages: gameMessages(idea), max_tokens: Math.min(3000, chosen.capabilities?.max_output_tokens ?? 3000), temperature: 0.7 })
       const game = parseGame(reply.choices?.[0]?.message?.content, idea)
       return json({ game, credits: reply.credits_charged ?? null, model: chosen.id })
+    }
+    case 'game-plan': {
+      // "Game with my child": the script plus the scenes (featuring the child/family) the browser will have drawn.
+      const body = await readJson(request)
+      if (body.costAccepted !== true) throw fail('Người lớn cần đồng ý trừ credit trước khi tạo trò chơi.', 400, 'consent_required')
+      const req = validatePlanRequest(body)
+      const chats = (await ai.listModels()).filter(m => m.media_type === 'chat')
+      const chosen = chats.find(m => m.id === (body.model || env.AI34_CHAT_MODEL)) ?? chats.find(m => /flash/i.test(m.id)) ?? chats[0]
+      if (!chosen) throw fail(friendly('model_unavailable'), 503, 'model_unavailable')
+      const reply = await ai.chat({ model: chosen.id, messages: planMessages(req), max_tokens: Math.min(4000, chosen.capabilities?.max_output_tokens ?? 4000), temperature: 0.7 })
+      const plan = parsePlan(reply.choices?.[0]?.message?.content, req)
+      return json({ plan, credits: reply.credits_charged ?? null, model: chosen.id })
     }
   }
   return json({ error: 'Không tìm thấy chức năng.' }, 404)

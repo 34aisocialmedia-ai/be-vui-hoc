@@ -109,8 +109,8 @@ export function HomeWebsite({ onPlayGame, onOpenCollection, onOpenAdult, totalCo
     {doors}
     {family.length > 0 && <section className="family-games" aria-label="Trò chơi của nhà mình">
       <h2>Trò chơi của nhà mình</h2>
-      <div className="family-game-row">{family.map(({ asset, spec, game }) => <button key={asset.id} className="family-game" aria-label={`Chơi ${spec.title}`} onClick={() => { playPop(); onPlayGame(game) }}>
-        <span className="family-game-art"><LearningPicture emoji={spec.icon} size={84} /></span>
+      <div className="family-game-row">{family.map(({ asset, spec, game, cover }) => <button key={asset.id} className="family-game" aria-label={`Chơi ${spec.title}`} onClick={() => { playPop(); onPlayGame(game) }}>
+        <span className={`family-game-art${cover ? ' has-cover' : ''}`}>{cover ? <img src={cover} alt="" /> : <LearningPicture emoji={spec.icon} size={84} />}</span>
         <b>{spec.title}</b><small>{spec.questions.length} câu · {AGES.find(a => a.id === spec.age)?.label}</small>
       </button>)}</div>
     </section>}

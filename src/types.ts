@@ -23,6 +23,8 @@ export interface Question {
   text: string
   /** Hình lớn hiển thị phía trên câu hỏi (nhóm đồ vật, quy luật...) */
   show?: string
+  /** Ảnh hiển thị phía trên câu hỏi (ví dụ cảnh có bé do AI vẽ trong Xưởng sáng tạo) */
+  showPhoto?: string
   /** Dãy số có ô trống, và quy luật bằng hình để bé không cần đọc. */
   sequence?: (number | null)[]
   pattern?: string[]

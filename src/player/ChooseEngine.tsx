@@ -22,7 +22,7 @@ export function ChooseEngine({ game, api }: { game: Game; api: Api }) {
 
   // Pictures grow with the free space: about 100 px on a phone, up to 220 px on a tablet.
   // Pictures stand on the scene (no card around them), so they can take most of the room.
-  const extra = q.show || q.groups || q.sequence || q.pattern ? 150 : 0
+  const extra = q.showPhoto ? Math.min(260, (api.stage.height || 600) * .34) : q.show || q.groups || q.sequence || q.pattern ? 150 : 0
   // Try each number of columns and keep the one that gives the biggest pictures for this screen.
   const sizeFor = (cols: number) => {
     const rows = Math.ceil(opts.length / cols)
@@ -79,7 +79,8 @@ export function ChooseEngine({ game, api }: { game: Game; api: Api }) {
         <div className="qtext">{q.text}</div>
       </div>
 
-      {(q.show || q.groups || q.sequence || q.pattern) && <div key={`show-${q.id}`} className="scene-show round-in" ref={show}>
+      {(q.show || q.showPhoto || q.groups || q.sequence || q.pattern) && <div key={`show-${q.id}`} className="scene-show round-in" ref={show}>
+        {q.showPhoto && <img className="qshow-photo" src={q.showPhoto} alt="" />}
         {q.show && <div className="qshow">{Array.from(q.show.replace(/[\s\uFE0F]/g, '')).map((emoji, i) => <LearningPicture key={i} emoji={emoji} size={showSize} />)}</div>}
         {q.groups && <div className="learning-groups" aria-label="Các nhóm đồ vật">
           {q.groups.map((group, i) => <div className="learning-group" key={i}>{group.map((emoji, j) => <LearningPicture key={j} emoji={emoji} size={Math.round(showSize * .85)} />)}</div>)}

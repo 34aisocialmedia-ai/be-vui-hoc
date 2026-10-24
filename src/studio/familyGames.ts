@@ -5,11 +5,8 @@ import { useStudioMedia, type DisplayAsset } from './media'
 
 /** Turn a game made in the studio into a game the app's player can run (choose the right picture). */
 export function toGame(asset: { id: string }, spec: FamilyGame, assets: DisplayAsset[]): Game {
-  const photo = (i?: number) => {
-    if (i === undefined) return undefined
-    const id = spec.photos?.[i]
-    return assets.find(a => a.id === id && a.kind === 'image')?.url
-  }
+  const image = (id?: string) => id ? assets.find(a => a.id === id && a.kind === 'image')?.url : undefined
+  const photo = (i?: number) => i === undefined ? undefined : image(spec.photos?.[i])
   return {
     id: `fam-${asset.id}`,
     title: spec.title,
@@ -24,7 +21,8 @@ export function toGame(asset: { id: string }, spec: FamilyGame, assets: DisplayA
     questions: spec.questions.map((q, n) => ({
       id: `fam-${asset.id}-${n}`,
       text: q.text,
-      options: q.options.map((o, k) => ({ id: `o${n}-${k}`, label: o.label, emoji: o.emoji ?? '⭐', photo: photo(o.family), correct: o.correct })),
+      showPhoto: image(q.show),
+      options: q.options.map((o, k) => ({ id: `o${n}-${k}`, label: o.label, emoji: o.emoji ?? '⭐', photo: image(o.asset) ?? photo(o.family), correct: o.correct })),
     })),
   }
 }
@@ -33,7 +31,7 @@ export async function readSpec(asset: { blob: Blob }): Promise<FamilyGame | null
   try { return JSON.parse(await asset.blob.text()) as FamilyGame } catch { return null }
 }
 
-export interface FamilyEntry { asset: DisplayAsset; spec: FamilyGame; game: Game }
+export interface FamilyEntry { asset: DisplayAsset; spec: FamilyGame; game: Game; cover: string | undefined }
 
 /** All games made in the studio, ready to play. */
 export function useFamilyGames(): FamilyEntry[] {
@@ -42,7 +40,7 @@ export function useFamilyGames(): FamilyEntry[] {
   useEffect(() => {
     let active = true
     const games = assets.filter(a => a.kind === 'game')
-    Promise.all(games.map(async asset => { const spec = await readSpec(asset); return spec ? { asset, spec, game: toGame(asset, spec, assets) } : null }))
+    Promise.all(games.map(async asset => { const spec = await readSpec(asset); return spec ? { asset, spec, game: toGame(asset, spec, assets), cover: spec.cover ? assets.find(a => a.id === spec.cover)?.url : undefined } : null }))
       .then(rows => { if (active) setList(rows.filter((r): r is FamilyEntry => !!r)) })
     return () => { active = false }
   }, [assets])

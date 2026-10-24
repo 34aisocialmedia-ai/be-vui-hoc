@@ -30,11 +30,11 @@ export function AdultPage({ settings, plays, onChange, onBack, onStudio }: {
       <span className="ap-studio-badge">MỚI · AI 34AI</span>
       <span className="ap-studio-text">
         <strong>Xưởng sáng tạo AI</strong>
-        <span>Đưa ảnh của bé vào trò chơi, làm video, giọng đọc có tên bé, hoặc tạo cả một trò chơi mới chỉ từ một ý tưởng.</span>
+        <span>Tải ảnh của bé (và bố mẹ, ông bà), chọn chủ đề, bấm một nút: AI tạo trọn bộ trò chơi có chính bé trong từng bức tranh, cô giáo đọc câu hỏi.</span>
         <span className="ap-studio-chips">
-          <i>🖼️ Ảnh có bé</i><i>🎬 Video</i><i>🎙️ Giọng nói</i><i>🎲 Trò chơi từ ý tưởng</i>
+          <i>🌟 Trò chơi có bé</i><i>👨‍👩‍👧 Cả nhà cùng vào</i><i>🎙️ Cô giáo đọc</i><i>🧰 Ảnh, video lẻ</i>
         </span>
-        <span className="ap-studio-cta">Mở xưởng <UiIcon name="next" /></span>
+        <span className="ap-studio-cta">Tạo trò chơi có bé <UiIcon name="next" /></span>
       </span>
       <img className="ap-studio-art" src="/assets/images/mascot_rabbit.webp" alt="" />
     </button>
