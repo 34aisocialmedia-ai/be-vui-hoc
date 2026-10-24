@@ -13,6 +13,8 @@ import { GAME_TEMPLATES, IMAGE_TEMPLATES, VIDEO_TEMPLATES, VOICE_TEMPLATES, fill
 import { readSpec, spokenLinesOf, toGame } from './familyGames'
 import { GameWizard } from './GameWizard'
 
+/** Set to true to show the single tools (picture, video, voice, emoji game) again. */
+const SHOW_TOOLS = false
 type Tab = 'image' | 'video' | 'audio' | 'game'
 const TABS: { id: Tab; icon: string; title: string; hint: string }[] = [
   { id: 'image', icon: '🖼️', title: 'Tạo ảnh', hint: 'Đưa bé vào trò chơi, banner, bìa' },
@@ -72,6 +74,7 @@ export default function Studio({ onBack, onPlayGame }: { onBack: () => void; onP
   const [tab, setTab] = useState<Tab>('image')
   // The main job of the studio is the one-click "game with my child"; single tools come second.
   const [mode, setMode] = useState<'wizard' | 'tools'>('wizard')
+  // Single tools (picture, video, voice) are hidden for now: the studio only makes games with the child.
   const [childName, setChildName] = useState(() => { try { return localStorage.getItem('be-vui-hoc-child-name') ?? '' } catch { return '' } })
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState('')
   const [pending, setPending] = useState<PendingJob[]>(readPending)
@@ -179,15 +182,15 @@ export default function Studio({ onBack, onPlayGame }: { onBack: () => void; onP
 
     {keyView && <KeyPanel view={keyView} code={code} busy={busy} run={run} setMessage={setMessage} onSaved={view => { setKeyView(view); void loadModels(view) }} />}
 
-    <nav className="xs-mode" aria-label="Chế độ xưởng">
+    {SHOW_TOOLS && <nav className="xs-mode" aria-label="Chế độ xưởng">
       <button aria-pressed={mode === 'wizard'} className={mode === 'wizard' ? 'selected' : ''} onClick={() => setMode('wizard')}><span aria-hidden="true">🌟</span><b>Tạo trò chơi có bé</b><small>Tải ảnh, bấm một nút, AI làm cả bộ</small></button>
       <button aria-pressed={mode === 'tools'} className={mode === 'tools' ? 'selected' : ''} onClick={() => setMode('tools')}><span aria-hidden="true">🧰</span><b>Công cụ lẻ</b><small>Ảnh, video, giọng nói riêng</small></button>
-    </nav>
+    </nav>}
 
     {mode === 'wizard' && <GameWizard code={code} unlocked={unlocked && available.ai34} models={models} voices={catalog?.voices ?? []} voiceModel={catalog?.models[0]?.id}
       childName={childName} setChildName={setChildName} onPlayGame={onPlayGame} setMessage={setMessage} setError={setError} />}
 
-    {mode === 'tools' && <>
+    {SHOW_TOOLS && mode === 'tools' && <>
     <label className="xs-child">Tên gọi của bé (dùng trong mẫu)<input value={childName} maxLength={30} onChange={e => setChildName(e.target.value)} placeholder="Ví dụ: Na, Bin, Su" /></label>
 
     {sources.length > 1 && <div className="xs-chips xs-provider" role="group" aria-label="Nguồn AI"><b>Dùng AI của:</b>{sources.map(p => <button key={p} aria-pressed={provider === p} className={provider === p ? 'selected' : ''} onClick={() => setChosen(p)}>{PROVIDER_LABEL[p]}</button>)}</div>}

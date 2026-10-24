@@ -32,7 +32,7 @@ export function AdultPage({ settings, plays, onChange, onBack, onStudio }: {
         <strong>Xưởng sáng tạo AI</strong>
         <span>Tải ảnh của bé (và bố mẹ, ông bà), chọn chủ đề, bấm một nút: AI tạo trọn bộ trò chơi có chính bé trong từng bức tranh, cô giáo đọc câu hỏi.</span>
         <span className="ap-studio-chips">
-          <i>🌟 Trò chơi có bé</i><i>👨‍👩‍👧 Cả nhà cùng vào</i><i>🎙️ Cô giáo đọc</i><i>🧰 Ảnh, video lẻ</i>
+          <i>🌟 Trò chơi có bé</i><i>👨‍👩‍👧 Cả nhà cùng vào</i><i>🎙️ Cô giáo đọc</i><i>✨ Bấm một nút</i>
         </span>
         <span className="ap-studio-cta">Tạo trò chơi có bé <UiIcon name="next" /></span>
       </span>
