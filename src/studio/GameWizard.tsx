@@ -58,40 +58,84 @@ const pickResolution = (m: Ai34Model, quality: Quality) => {
   return list.find(r => /720|1k/i.test(r))
 }
 
-type Refs = { label: string; from: number; to: number }[]
-const nums = (r: Refs[number]) => r.from === r.to ? `${r.from}` : Array.from({ length: r.to - r.from + 1 }, (_, i) => r.from + i).join(', ')
-/**
- * Who is who in the reference photos, put FIRST in the prompt: image models keep a likeness far better
- * when the identity rule leads and names the exact photos (English for the model, Vietnamese for the scene).
- */
-function identity(refs: Refs) {
-  if (!refs.length) return ''
-  const map = refs.map(r => `reference image${r.from === r.to ? '' : 's'} ${nums(r)} = real photo${r.from === r.to ? '' : 's'} of "${r.label}"`).join('; ')
+/** Who is in a picture and which reference images show them (1-based, in the order sent). */
+export interface Cast { label: string; photos: number[]; design?: number }
+const list = (n: number[]) => n.length === 1 ? `reference image ${n[0]}` : `reference images ${n.join(', ')}`
+
+/** Features copied from the photos. Spelled out one by one: models keep a likeness far better that way. */
+const LIKENESS = 'face shape and chin, cheek fullness, eye shape, eye size relative to the face, eye spacing and eye colour, eyelids, eyebrow shape and thickness, nose shape and size, lip shape and smile, ears, skin tone, hair colour, hairstyle, parting, hair length, fringe or bangs, hair accessories, freckles or moles, glasses if worn, apparent age and body build'
+const STYLE = 'Art style: cute, high-quality 3D animated family-film look; smooth soft rendering, gentle subsurface skin, soft rounded forms, glossy expressive eyes with catchlights, slightly cartoon proportions (head a little larger); bright cheerful colours, warm soft lighting.'
+const KEEP = 'Stylise ONLY the rendering. Do not beautify, slim, age up or down, lighten or darken the skin, change the ethnicity, enlarge the eyes into a different shape, or replace anyone with a generic cartoon face.'
+
+/** Step 1: one approved-looking 3D design per person, made from their real photos only. */
+export function characterPrompt(label: string, photos: number[], child: boolean) {
   return [
-    `IDENTITY (most important): ${map}.`,
-    `Draw ${refs.length > 1 ? 'each of these real people' : 'this real person'} as a 3D animated character that is clearly recognisable as the SAME person: keep the exact face shape, eye shape and eye colour, eyebrows, nose, mouth and smile, skin tone, hair colour, hairstyle, hair length and fringe, approximate age and body proportions from their photos.`,
-    `Only the rendering style changes (soft 3D animation look); do not invent a different face, do not change hairstyle or ethnicity, do not make a generic cartoon child.`,
-    refs.length > 1 ? 'Never swap or merge faces between people; each person appears once.' : '',
-  ].filter(Boolean).join(' ')
-}
-const STYLE = 'Phong cách: hoạt hình 3D bán thực, mềm mại, đáng yêu như phim hoạt hình gia đình; màu tươi sáng, ánh sáng ấm; khuôn mặt nhìn rõ, chính diện hoặc hơi nghiêng, không bị che, đủ lớn trong khung.'
-
-/** Prompt for one scene: identity of the people first, then the scene, then the style. */
-export function scenePrompt(scene: string, refs: Refs) {
-  return [identity(refs), `Cảnh (tranh cho trò chơi trẻ mầm non): ${scene}.`, STYLE, 'Bố cục đơn giản, hành động rõ ràng ở giữa khung, nền gọn gàng, không có chữ.'].filter(Boolean).join('\n')
+    `Create a 3D animated character portrait of the ${child ? 'young child' : 'person'} "${label}" shown in the real photos (${list(photos)}).`,
+    `LIKENESS IS THE TOP PRIORITY: it must look like the SAME ${child ? 'child' : 'person'} turned into a cute 3D cartoon, instantly recognisable by their family.`,
+    `Copy exactly from the photos: ${LIKENESS}.`,
+    KEEP,
+    STYLE,
+    'Framing: head and shoulders, front view, looking at the viewer, natural happy smile, the whole face and hair clearly visible, nothing covering the face; plain soft pastel background; even soft studio light. Simple everyday clothes in colours similar to the photo. Only this one person. No text.',
+  ].join('\n')
 }
 
-export function coverPrompt(name: string, scene: string, refs: Refs) {
+/** The character block every scene and the cover start with: the same faces in every picture. */
+export function castBlock(cast: Cast[]) {
+  if (!cast.length) return ''
+  const lines = cast.map(c => {
+    const parts = [c.photos.length ? `real photo${c.photos.length > 1 ? 's' : ''} = ${list(c.photos)}` : '', c.design ? `approved 3D character design = reference image ${c.design}` : ''].filter(Boolean).join('; ')
+    const how = c.design
+      ? `Draw "${c.label}" exactly as this approved character design (same face, eyes, nose, mouth, skin tone, hair colour, hairstyle and fringe), checked against the real photos.`
+      : `Draw "${c.label}" as a cute 3D cartoon version of the real person in the photos, copying: ${LIKENESS}.`
+    return `- "${c.label}": ${parts}. ${how}`
+  })
+  return [
+    'CHARACTERS (keep them identical in every picture of this game):',
+    ...lines,
+    `Rules: likeness comes first, only the art style changes. ${KEEP} Never swap or merge faces between people. Each named person appears exactly once; do not add other people unless the scene asks for them.`,
+  ].join('\n')
+}
+
+/** Prompt for one scene: characters first, then the scene, the style and the framing. */
+export function scenePrompt(scene: string, cast: Cast[]) {
+  return [
+    castBlock(cast),
+    `SCENE (a picture for a preschool learning game): ${scene}.`,
+    STYLE,
+    'Composition: square frame, one clear action in the centre, simple uncluttered background; the characters\' faces large enough and clearly visible (front or three-quarter view), not hidden by objects, hands or hair. No text, no logos.',
+  ].filter(Boolean).join('\n')
+}
+
+/** Prompt for the cover: the characters, the game's title as playful layered 3D letters, the scene below. */
+export function coverPrompt(name: string, scene: string, cast: Cast[]) {
   const title = name.replace(/["“”'‘’`]/g, '').trim()
   return [
-    identity(refs),
-    `Ảnh bìa trò chơi cho trẻ mầm non, khung ngang, phong cách hoạt hình 3D dễ thương như phim hoạt hình gia đình, màu tươi sáng, ánh sáng ấm.`,
-    `TIÊU ĐỀ TRÒ CHƠI: viết chính xác dòng chữ tiếng Việt "${title}" (đúng từng chữ cái và dấu thanh, không thêm, không bớt, không đổi chữ), đặt nổi bật ở phần trên của ảnh, chiếm khoảng một phần ba chiều cao.`,
-    `Kiểu chữ: chữ 3D nhiều lớp ngộ nghĩnh, nét tròn mập như bong bóng hoặc kẹo dẻo; mỗi chữ cái một màu tươi xen kẽ (đỏ, cam, vàng, xanh lá, xanh dương, tím); lớp viền trắng dày bao quanh, ngoài cùng là lớp viền màu đậm; khối 3D nhiều lớp xếp chồng tạo độ dày, bóng đổ mềm phía dưới, ánh sáng bóng loáng trên mặt chữ; các chữ cái hơi nghiêng lên xuống nhảy múa vui nhộn; có vài ngôi sao lấp lánh nhỏ quanh chữ.`,
-    `Chữ to, rõ, dễ đọc, nằm trọn trong khung, không bị nhân vật hay đồ vật che.`,
-    `Cảnh minh họa ở nửa dưới: ${scene}. Nhân vật vui tươi, nhìn về phía người xem, khuôn mặt rõ và giống ảnh thật.`,
-    `Ngoài dòng tiêu đề, không có chữ nào khác.`,
+    castBlock(cast),
+    'COVER of a preschool learning game, landscape frame.',
+    `TITLE: write exactly the Vietnamese text "${title}" (every letter and every tone mark exactly as given, nothing added, removed or changed), large in the upper third of the image.`,
+    'Title lettering: playful multi-layer 3D letters, chunky rounded bubble / jelly-candy shapes, each letter a different bright colour (red, orange, yellow, green, blue, purple), a thick white outline and an outer darker outline, several stacked 3D layers giving depth, soft drop shadow, glossy highlights, letters bouncing slightly up and down, a few small sparkling stars around. Big, sharp, easy to read, fully inside the frame, not covered by anyone.',
+    `SCENE in the lower half: ${scene}. The characters look happy and face the viewer, faces clear and true to their photos.`,
+    STYLE,
+    'No other text anywhere except the title.',
   ].filter(Boolean).join('\n')
+}
+
+/** Which reference images go with one picture (the model takes at most `max`): each person's design and first photo first, then more photos, the child first. */
+export function allot(ids: string[], photos: Record<string, string[]>, designs: Record<string, string | undefined>, labels: Record<string, string>, max: number) {
+  const order = [...ids].sort((x, y) => (x === 'be' ? -1 : y === 'be' ? 1 : 0))
+  const pick: Record<string, { photos: string[]; design?: string }> = Object.fromEntries(order.map(id => [id, { photos: [] }]))
+  let used = 0
+  for (const id of order) if (designs[id] && used < max) { pick[id].design = designs[id]; used++ }
+  for (let round = 0; round < 3; round++) for (const id of order) { const k = photos[id]?.[round]; if (k && used < max) { pick[id].photos.push(k); used++ } }
+  const images: string[] = [], cast: Cast[] = []
+  for (const id of order) {
+    const p = pick[id]
+    if (!p.photos.length && !p.design) continue
+    const ph = p.photos.map(k => images.push(k))
+    const design = p.design ? images.push(p.design) : undefined
+    cast.push({ label: labels[id], photos: ph, ...(design ? { design } : {}) })
+  }
+  return { images, cast }
 }
 
 async function shrink(blob: Blob, max: number): Promise<Blob> {
@@ -125,7 +169,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
   })
   const [quality, setQuality] = useState<Quality>('normal'), [withVoice, setWithVoice] = useState(true), [consent, setConsent] = useState(false)
   const [phase, setPhase] = useState<'form' | 'run' | 'done'>('form')
-  const [steps, setSteps] = useState<Record<'plan' | 'refs' | 'draw' | 'voice' | 'save', State>>({ plan: 'wait', refs: 'wait', draw: 'wait', voice: 'wait', save: 'wait' })
+  const [steps, setSteps] = useState<Record<'plan' | 'refs' | 'char' | 'draw' | 'voice' | 'save', State>>({ plan: 'wait', refs: 'wait', char: 'wait', draw: 'wait', voice: 'wait', save: 'wait' })
   const [tasks, setTasks] = useState<Task[]>([]), [plan, setPlan] = useState<GamePlan | null>(null), [status, setStatus] = useState('')
   const [result, setResult] = useState<{ id: string; spec: FamilyGame } | null>(null)
   const stop = useRef(false)
@@ -172,7 +216,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
     stop.current = false
     setPhase('run'); setError(''); setMessage(''); setResult(null); setPlan(null); setTasks([])
     setTimeout(() => document.querySelector('.gw')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
-    setSteps({ plan: 'run', refs: 'wait', draw: 'wait', voice: withVoice ? 'wait' : 'skip', save: 'wait' })
+    setSteps({ plan: 'run', refs: 'wait', char: 'wait', draw: 'wait', voice: withVoice ? 'wait' : 'skip', save: 'wait' })
     const mark = (k: keyof typeof steps, s: State) => setSteps(old => ({ ...old, [k]: s }))
     const childLabel = /^bé(\s|$)/i.test(name) ? `Bé${name.slice(2)}` : `Bé ${name}`
     const crew = people.map(p => ({ ...p, label: p.id === 'be' ? childLabel : p.label.trim() }))
@@ -193,47 +237,67 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
       for (const p of crew) refs[p.id] = await Promise.all(p.photos.map(ph => uploadReference(code, ph.blob, `${p.id}.jpg`)))
       mark('refs', 'done')
 
-      // 3. Draw the cover and every scene (3 at a time, one retry each).
-      mark('draw', 'run')
+      const maxRefs = Math.max(1, Math.min(imageModel.capabilities.max_reference_images ?? 4, 7))
+      const labels = Object.fromEntries(crew.map(p => [p.id, p.label]))
+      const update = (key: string, patch: Partial<Task>) => setTasks(old => old.map(t => t.key === key ? { ...t, ...patch } : t))
+      /** Draw one picture (one retry); returns null when it could not be drawn. */
+      async function draw(key: string, body: Record<string, unknown>, max: number): Promise<Blob | null> {
+        update(key, { state: 'run' })
+        for (let attempt = 0; attempt < 2 && !stop.current; attempt++) {
+          try {
+            const view = await submit<JobView>('generate', code, { model: imageModel!.id, consent: true, costAccepted: true, ...body })
+            const fin = await follow(code, view.id, 'image', v => update(key, { note: v.label ?? undefined }))
+            if (fin.status !== 'completed') throw new StudioError(fin.error?.message ?? 'Không vẽ được tranh này.')
+            const blob = await shrink(await download(code, view.id, 0), max)
+            update(key, { state: 'done', blob, url: URL.createObjectURL(blob), note: undefined })
+            return blob
+          } catch (e) {
+            const credits = (e as StudioError).code === 'insufficient_credits'
+            if (attempt === 1 || credits) { update(key, { state: 'fail', note: e instanceof Error ? e.message : 'Lỗi' }); if (credits) stop.current = true; return null }
+            await wait(1500)
+          }
+        }
+        return null
+      }
+      // Sharper pictures for the characters and the cover (faces and the title) unless the parent chose "fast".
+      const sharp = quality === 'fast' ? pickResolution(imageModel, quality) : undefined
+      const square = pickRatio(imageModel, ['1:1', '4:3'])
+
+      // 3. One 3D character per person from their real photos: every picture then uses the same faces.
       const list: Task[] = [
         { key: 'cover', label: 'Bìa trò chơi', scene: plan.cover.scene, people: plan.cover.people as PersonId[], cover: true, state: 'wait' },
         ...plan.scenes.map(s => ({ key: s.id, label: s.scene, scene: s.scene, people: s.people as PersonId[], state: 'wait' as State })),
       ]
-      setTasks(list)
-      const maxRefs = Math.max(1, Math.min(imageModel.capabilities.max_reference_images ?? 4, 7))
+      const inGame = crew.filter(p => list.some(t => t.people.includes(p.id)) && refs[p.id]?.length)
+      const chars: Task[] = inGame.map(p => ({ key: `char-${p.id}`, label: `Nhân vật: ${p.label}`, scene: '', people: [p.id], state: 'wait', refs: `${p.label}: ${Math.min(refs[p.id].length, maxRefs)} ảnh thật` }))
+      setTasks([...chars, ...list])
+      mark('char', 'run'); setStatus(`AI đang tạo nhân vật 3D giống ${name}…`)
+      const designs: Record<string, string | undefined> = {}
+      await pool(inGame, 3, async p => {
+        if (stop.current) return
+        const photos = refs[p.id].slice(0, maxRefs)
+        const blob = await draw(`char-${p.id}`, { prompt: characterPrompt(p.label, photos.map((_, i) => i + 1), p.id === 'be'), images: photos, ...(square ? { ratio: square } : {}), ...(sharp ? { resolution: sharp } : {}) }, 1024)
+        if (blob) designs[p.id] = await uploadReference(code, blob, `nhan-vat-${p.id}.jpg`).catch(() => undefined)
+      })
+      if (stop.current) throw new StudioError('Đã dừng. Các tranh đã vẽ vẫn còn trên màn hình.')
+      mark('char', inGame.every(p => designs[p.id]) ? 'done' : 'fail')
+
+      // 4. The cover and every scene (3 at a time), each with the characters and the real photos.
+      mark('draw', 'run')
       const finished = new Map<string, Blob>()
-      const update = (key: string, patch: Partial<Task>) => setTasks(old => old.map(t => t.key === key ? { ...t, ...patch } : t))
       let done = 0
       setStatus(`AI đang vẽ ${list.length} bức tranh có ${name}…`)
       await pool(list, 3, async task => {
         if (stop.current) return
-        const images: string[] = [], who: { label: string; from: number; to: number }[] = []
-        for (const id of [...task.people].sort((x, y) => (x === 'be' ? -1 : y === 'be' ? 1 : 0))) {
-          const keys = (refs[id] ?? []).slice(0, Math.max(0, maxRefs - images.length))
-          if (!keys.length) continue
-          who.push({ label: crew.find(p => p.id === id)!.label, from: images.length + 1, to: images.length + keys.length })
-          images.push(...keys)
-        }
+        const { images, cast } = allot(task.people, refs, designs, labels, maxRefs)
+        update(task.key, { refs: cast.map(c => `${c.label}: ${c.photos.length} ảnh${c.design ? ' + nhân vật 3D' : ''}`).join(', ') || 'không có người' })
         const ratio = pickRatio(imageModel, task.cover ? ['16:9', '4:3', '1:1'] : ['1:1', '4:3'])
-        // The cover carries text: keep the model's own (sharper) resolution unless the parent chose "fast".
-        const resolution = task.cover && quality !== 'fast' ? undefined : pickResolution(imageModel, quality)
-        const sent = who.map(w => `${w.label}: ${w.to - w.from + 1} ảnh`).join(', ')
-        update(task.key, { state: 'run', refs: sent || 'không có người' })
-        for (let attempt = 0; attempt < 2 && !stop.current; attempt++) {
-          try {
-            const view = await submit<JobView>('generate', code, { model: imageModel.id, prompt: task.cover ? coverPrompt(plan.title, task.scene, who) : scenePrompt(task.scene, who), ...(task.cover ? { title: plan.title } : {}), images, ...(ratio ? { ratio } : {}), ...(resolution ? { resolution } : {}), consent: true, costAccepted: true })
-            const fin = await follow(code, view.id, 'image', v => update(task.key, { note: v.label ?? undefined }))
-            if (fin.status !== 'completed') throw new StudioError(fin.error?.message ?? 'Không vẽ được cảnh này.')
-            const blob = await shrink(await download(code, view.id, 0), task.cover ? 1280 : 768)
-            finished.set(task.key, blob)
-            update(task.key, { state: 'done', blob, url: URL.createObjectURL(blob), note: undefined })
-            done++; setStatus(`Đã vẽ ${done}/${list.length} bức tranh…`)
-            return
-          } catch (e) {
-            if (attempt === 1 || (e as StudioError).code === 'insufficient_credits') { update(task.key, { state: 'fail', note: e instanceof Error ? e.message : 'Lỗi' }); if ((e as StudioError).code === 'insufficient_credits') stop.current = true; return }
-            await wait(1500)
-          }
-        }
+        const resolution = task.cover ? sharp : pickResolution(imageModel, quality)
+        const blob = await draw(task.key, {
+          prompt: task.cover ? coverPrompt(plan.title, task.scene, cast) : scenePrompt(task.scene, cast), ...(task.cover ? { title: plan.title } : {}),
+          images, ...(ratio ? { ratio } : {}), ...(resolution ? { resolution } : {}),
+        }, task.cover ? 1280 : 768)
+        if (blob) { finished.set(task.key, blob); done++; setStatus(`Đã vẽ ${done}/${list.length} bức tranh…`) }
       })
       if (stop.current) throw new StudioError('Đã dừng. Các tranh đã vẽ vẫn còn trên màn hình.')
       if (!plan.scenes.some(s => finished.has(s.id))) throw new StudioError('Chưa vẽ được bức tranh nào. Hãy kiểm tra credit 34AI rồi thử lại.')
@@ -302,7 +366,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
         <p>{status || (result ? `“${result.spec.title}” đã có trên trang chủ.` : 'Xem các bước bên dưới, rồi bấm tạo lại.')}</p></div>
     </div>
     <ol className="gw-steps">
-      {([['plan', 'Soạn kịch bản theo giáo án'], ['refs', 'Gửi ảnh của bé và người thân'], ['draw', `Vẽ tranh có ${name}`], ['save', 'Lưu trò chơi, đưa ra trang chủ'], ['voice', 'Cô giáo đọc câu hỏi']] as const).map(([k, t]) =>
+      {([['plan', 'Soạn kịch bản theo giáo án'], ['refs', 'Gửi ảnh của bé và người thân'], ['char', 'Tạo nhân vật 3D giống ảnh thật'], ['draw', `Vẽ tranh có ${name}`], ['save', 'Lưu trò chơi, đưa ra trang chủ'], ['voice', 'Cô giáo đọc câu hỏi']] as const).map(([k, t]) =>
         <li key={k} className={`gw-step ${steps[k]}`}><i aria-hidden="true">{steps[k] === 'done' ? '✓' : steps[k] === 'fail' ? '!' : steps[k] === 'skip' ? '–' : steps[k] === 'run' ? '' : '•'}</i><span>{t}</span></li>)}
     </ol>
     {tasks.length > 0 && <div className="gw-gallery">{tasks.map(t => <figure key={t.key} className={`gw-tile ${t.state}${t.cover ? ' cover' : ''}`}>
@@ -358,7 +422,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
       <div className="gw-row" role="group" aria-label="Chất lượng tranh"><span>Tranh:</span>{QUALITY.map(q => <button key={q.id} aria-pressed={quality === q.id} className={quality === q.id ? 'on' : ''} onClick={() => setQuality(q.id)} title={q.hint}>{q.title}</button>)}
         {imageModel && <small className="gw-model">{imageModel.name}</small>}</div>
       <label className="studio-check"><input type="checkbox" checked={withVoice} onChange={e => setWithVoice(e.target.checked)} /><span>Cô giáo AI đọc câu hỏi cho bé nghe</span></label>
-      <label className="studio-check"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>Tôi là người lớn có quyền dùng các ảnh này, đồng ý gửi ảnh và mô tả sang 34AI để tạo trò chơi, và dùng credit của tài khoản 34AI (khoảng 1 lượt soạn, tối đa 7 tranh và các câu giọng đọc).</span></label>
+      <label className="studio-check"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>Tôi là người lớn có quyền dùng các ảnh này, đồng ý gửi ảnh và mô tả sang 34AI để tạo trò chơi, và dùng credit của tài khoản 34AI (khoảng 1 lượt soạn, mỗi người 1 tranh nhân vật 3D, tối đa 7 tranh trò chơi và các câu giọng đọc).</span></label>
       <button className="btn gw-go" disabled={!ready} onClick={() => void create()}>✨ Tạo trò chơi có {name}</button>
       {!unlocked && <small>Xưởng chưa kết nối 34AI. Kiểm tra mục Khóa API 34AI ở trên.</small>}
       {unlocked && !child.photos.length && <small>Thêm ít nhất một ảnh rõ mặt của bé để bắt đầu.</small>}

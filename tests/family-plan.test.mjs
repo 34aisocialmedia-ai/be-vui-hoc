@@ -95,3 +95,23 @@ test('only a cover may carry text, and only the game title', async () => {
   assert.match(seen[0].prompt, /ngoài dòng tiêu đề "Na tự làm lấy"/)
   assert.match(seen[1].prompt, /không có chữ, logo hay hình mờ/)
 })
+
+test('every picture gets each person\'s 3D character first, then their real photos, within the model limit', async () => {
+  const { allot, scenePrompt, characterPrompt } = await import('../src/studio/GameWizard.tsx')
+  const photos = { be: ['b1', 'b2', 'b3'], p1: ['m1', 'm2'], p2: ['o1', 'o2'], p3: ['x1', 'x2'] }
+  const designs = { be: 'B', p1: 'M', p2: 'O', p3: undefined }
+  const labels = { be: 'Bé Na', p1: 'Mẹ', p2: 'Bà', p3: 'Bố' }
+  const one = allot(['be'], photos, designs, labels, 7)
+  assert.deepEqual(one.images, ['b1', 'b2', 'b3', 'B'])
+  assert.deepEqual(one.cast, [{ label: 'Bé Na', photos: [1, 2, 3], design: 4 }])
+  const all = allot(['p1', 'p2', 'be', 'p3'], photos, designs, labels, 7)
+  assert.equal(all.images.length, 7)
+  // The child comes first; every person keeps a design or at least one photo.
+  assert.equal(all.cast[0].label, 'Bé Na')
+  assert.ok(all.cast.every(c => c.design || c.photos.length))
+  assert.ok(all.images.includes('B') && all.images.includes('M') && all.images.includes('O') && all.images.includes('x1'))
+  const prompt = scenePrompt('Bé Na đánh răng', one.cast)
+  assert.match(prompt, /^CHARACTERS/)
+  assert.match(prompt, /"Bé Na": real photos = reference images 1, 2, 3; approved 3D character design = reference image 4/)
+  assert.match(characterPrompt('Bé Na', [1, 2], true), /LIKENESS IS THE TOP PRIORITY/)
+})

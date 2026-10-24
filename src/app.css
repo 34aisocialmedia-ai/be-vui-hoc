@@ -3742,7 +3742,7 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 .gw-run .gw-spark { animation: gwPulse 1.6s ease-in-out infinite; }
 @keyframes gwPulse { 50% { transform: scale(1.15) rotate(8deg); } }
 @media (prefers-reduced-motion: reduce) { .gw-run .gw-spark { animation: none; } }
-.gw-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.gw-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .gw-step { display: grid; justify-items: center; gap: 6px; text-align: center; font-size: .82rem; font-weight: 700; color: #8a968f; }
 .gw-step i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #eef1ea; font-style: normal; font-weight: 900; }
 .gw-step.run { color: #4b2fb3; }
