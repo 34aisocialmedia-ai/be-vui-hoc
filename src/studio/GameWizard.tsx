@@ -185,6 +185,12 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
     }))
     if (restored.some(p => p.id === 'be')) setPeople(restored)
   }, [saved.length])
+  // No automatic app update while a parent is in the studio (a reload would lose the photos or stop a game being made).
+  useEffect(() => {
+    const flag = window as unknown as { __bvhBusy?: boolean }
+    flag.__bvhBusy = true
+    return () => { flag.__bvhBusy = false }
+  }, [])
   useEffect(() => {
     if (phase !== 'run') return
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }

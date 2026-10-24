@@ -11,3 +11,17 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# Trình duyệt luôn hỏi lại bản mới của trang và service worker (tệp trong /static có tên băm, giữ lâu được).
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
