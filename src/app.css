@@ -3784,3 +3784,5 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   .gw-actions .btn { flex: 1 1 auto; }
 }
 .card-visual-media img.learning-photo[src^="blob:"] { object-fit: cover; border-radius: 26px; border: 5px solid #fff; box-shadow: 0 6px 0 #00000012, 0 10px 18px #2a1a3a1f; }
+.gw-tips { margin: -4px 0 12px; padding: 10px 14px; border-radius: 14px; background: #fff8e6; color: #6a5323; font-size: .86rem; line-height: 1.5; }
+.gw-tile figcaption .gw-refs { color: #2f7d5f; font-weight: 700; }

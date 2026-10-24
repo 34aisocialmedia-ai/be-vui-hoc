@@ -16,11 +16,13 @@ import { spokenLinesOf, toGame } from './familyGames'
  */
 
 type PersonId = 'be' | 'p1' | 'p2' | 'p3'
+/** Several clear photos (front, slight side, smiling) give the AI a much better likeness. */
+const MAX_PHOTOS: Record<PersonId, number> = { be: 3, p1: 2, p2: 2, p3: 2 }
 interface Photo { id: string; blob: Blob; url: string }
 interface Person { id: PersonId; label: string; photos: Photo[] }
 interface Voice { id: string; name: string }
 type State = 'wait' | 'run' | 'done' | 'fail' | 'skip'
-interface Task { key: string; label: string; scene: string; people: PersonId[]; cover?: boolean; state: State; url?: string; blob?: Blob; note?: string }
+interface Task { key: string; label: string; scene: string; people: PersonId[]; cover?: boolean; state: State; url?: string; blob?: Blob; note?: string; refs?: string }
 
 const THEMES = [
   { id: 'self-care', icon: '🪥', title: 'Bé tự chăm sóc', idea: 'Bé {be} tự làm việc vừa sức: đánh răng, rửa tay, mặc áo, cất đồ chơi. Hỏi bé nên làm gì và làm thế nào cho đúng.' },
@@ -36,7 +38,7 @@ const RELATIONS = ['Mẹ', 'Bố', 'Bà', 'Ông', 'Anh', 'Chị', 'Em', 'Cô gi�
 const QUALITY = [
   { id: 'fast', title: 'Nhanh', hint: 'tiết kiệm credit' },
   { id: 'normal', title: 'Cân bằng', hint: 'khuyên dùng' },
-  { id: 'best', title: 'Đẹp nhất', hint: 'lâu hơn, nhiều credit hơn' },
+  { id: 'best', title: 'Giống bé nhất', hint: 'model Pro: giữ khuôn mặt tốt nhất, lâu hơn, nhiều credit hơn' },
 ] as const
 type Quality = typeof QUALITY[number]['id']
 
@@ -57,25 +59,39 @@ const pickResolution = (m: Ai34Model, quality: Quality) => {
 }
 
 type Refs = { label: string; from: number; to: number }[]
-const whoOf = (refs: Refs) => refs.map(r => `${r.label} giữ đúng khuôn mặt, kiểu tóc và nét đặc trưng của người trong ảnh tham chiếu ${r.from === r.to ? `số ${r.from}` : `số ${r.from}–${r.to}`}`).join('; ')
+const nums = (r: Refs[number]) => r.from === r.to ? `${r.from}` : Array.from({ length: r.to - r.from + 1 }, (_, i) => r.from + i).join(', ')
+/**
+ * Who is who in the reference photos, put FIRST in the prompt: image models keep a likeness far better
+ * when the identity rule leads and names the exact photos (English for the model, Vietnamese for the scene).
+ */
+function identity(refs: Refs) {
+  if (!refs.length) return ''
+  const map = refs.map(r => `reference image${r.from === r.to ? '' : 's'} ${nums(r)} = real photo${r.from === r.to ? '' : 's'} of "${r.label}"`).join('; ')
+  return [
+    `IDENTITY (most important): ${map}.`,
+    `Draw ${refs.length > 1 ? 'each of these real people' : 'this real person'} as a 3D animated character that is clearly recognisable as the SAME person: keep the exact face shape, eye shape and eye colour, eyebrows, nose, mouth and smile, skin tone, hair colour, hairstyle, hair length and fringe, approximate age and body proportions from their photos.`,
+    `Only the rendering style changes (soft 3D animation look); do not invent a different face, do not change hairstyle or ethnicity, do not make a generic cartoon child.`,
+    refs.length > 1 ? 'Never swap or merge faces between people; each person appears once.' : '',
+  ].filter(Boolean).join(' ')
+}
+const STYLE = 'Phong cách: hoạt hình 3D bán thực, mềm mại, đáng yêu như phim hoạt hình gia đình; màu tươi sáng, ánh sáng ấm; khuôn mặt nhìn rõ, chính diện hoặc hơi nghiêng, không bị che, đủ lớn trong khung.'
 
-/** Prompt for one scene: 3D cartoon, the people kept recognisable from their reference photos. */
+/** Prompt for one scene: identity of the people first, then the scene, then the style. */
 export function scenePrompt(scene: string, refs: Refs) {
-  const who = whoOf(refs)
-  return `Tranh minh họa phong cách hoạt hình 3D dễ thương như phim hoạt hình gia đình, màu tươi sáng, ánh sáng ấm, dùng trong trò chơi cho trẻ mầm non. Cảnh: ${scene}.${who ? ` Nhân vật: ${who}.` : ''} Bố cục đơn giản, hành động rõ ràng ở giữa khung, nền gọn gàng, không có chữ.`
+  return [identity(refs), `Cảnh (tranh cho trò chơi trẻ mầm non): ${scene}.`, STYLE, 'Bố cục đơn giản, hành động rõ ràng ở giữa khung, nền gọn gàng, không có chữ.'].filter(Boolean).join('\n')
 }
 
-/** Prompt for the cover: the scene plus the game's title as playful, layered 3D lettering. */
 export function coverPrompt(name: string, scene: string, refs: Refs) {
-  const who = whoOf(refs), title = name.replace(/["“”'‘’`]/g, '').trim()
+  const title = name.replace(/["“”'‘’`]/g, '').trim()
   return [
+    identity(refs),
     `Ảnh bìa trò chơi cho trẻ mầm non, khung ngang, phong cách hoạt hình 3D dễ thương như phim hoạt hình gia đình, màu tươi sáng, ánh sáng ấm.`,
     `TIÊU ĐỀ TRÒ CHƠI: viết chính xác dòng chữ tiếng Việt "${title}" (đúng từng chữ cái và dấu thanh, không thêm, không bớt, không đổi chữ), đặt nổi bật ở phần trên của ảnh, chiếm khoảng một phần ba chiều cao.`,
     `Kiểu chữ: chữ 3D nhiều lớp ngộ nghĩnh, nét tròn mập như bong bóng hoặc kẹo dẻo; mỗi chữ cái một màu tươi xen kẽ (đỏ, cam, vàng, xanh lá, xanh dương, tím); lớp viền trắng dày bao quanh, ngoài cùng là lớp viền màu đậm; khối 3D nhiều lớp xếp chồng tạo độ dày, bóng đổ mềm phía dưới, ánh sáng bóng loáng trên mặt chữ; các chữ cái hơi nghiêng lên xuống nhảy múa vui nhộn; có vài ngôi sao lấp lánh nhỏ quanh chữ.`,
     `Chữ to, rõ, dễ đọc, nằm trọn trong khung, không bị nhân vật hay đồ vật che.`,
-    `Cảnh minh họa ở nửa dưới: ${scene}.${who ? ` Nhân vật: ${who}.` : ''} Nhân vật vui tươi, nhìn về phía người xem.`,
+    `Cảnh minh họa ở nửa dưới: ${scene}. Nhân vật vui tươi, nhìn về phía người xem, khuôn mặt rõ và giống ảnh thật.`,
     `Ngoài dòng tiêu đề, không có chữ nào khác.`,
-  ].join(' ')
+  ].filter(Boolean).join('\n')
 }
 
 async function shrink(blob: Blob, max: number): Promise<Blob> {
@@ -121,7 +137,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
     const byId = new Map<string, DisplayAsset[]>()
     for (const a of saved) { const id = a.target!.slice(7); byId.set(id, [...(byId.get(id) ?? []), a]) }
     const restored: Person[] = (['be', 'p1', 'p2', 'p3'] as PersonId[]).filter(id => byId.has(id)).map(id => ({
-      id, label: id === 'be' ? '' : byId.get(id)![0].title, photos: byId.get(id)!.slice(0, id === 'be' ? 2 : 1).map(a => ({ id: a.id, blob: a.blob, url: URL.createObjectURL(a.blob) })),
+      id, label: id === 'be' ? '' : byId.get(id)![0].title, photos: byId.get(id)!.slice(0, MAX_PHOTOS[id]).map(a => ({ id: a.id, blob: a.blob, url: URL.createObjectURL(a.blob) })),
     }))
     if (restored.some(p => p.id === 'be')) setPeople(restored)
   }, [saved.length])
@@ -141,7 +157,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
   async function addPhotos(id: PersonId, files: FileList | null) {
     if (!files?.length) return
     try {
-      const max = id === 'be' ? 2 : 1
+      const max = MAX_PHOTOS[id]
       const prepared = await Promise.all([...files].slice(0, max).map(preparePicture))
       setPeople(list => list.map(p => p.id === id ? { ...p, photos: [...p.photos, ...prepared.map(x => ({ id: newKey(), blob: x.blob, url: x.url }))].slice(-max) } : p))
     } catch (e) { setError(e instanceof Error ? e.message : 'Không đọc được ảnh.') }
@@ -192,7 +208,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
       await pool(list, 3, async task => {
         if (stop.current) return
         const images: string[] = [], who: { label: string; from: number; to: number }[] = []
-        for (const id of task.people) {
+        for (const id of [...task.people].sort((x, y) => (x === 'be' ? -1 : y === 'be' ? 1 : 0))) {
           const keys = (refs[id] ?? []).slice(0, Math.max(0, maxRefs - images.length))
           if (!keys.length) continue
           who.push({ label: crew.find(p => p.id === id)!.label, from: images.length + 1, to: images.length + keys.length })
@@ -201,7 +217,8 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
         const ratio = pickRatio(imageModel, task.cover ? ['16:9', '4:3', '1:1'] : ['1:1', '4:3'])
         // The cover carries text: keep the model's own (sharper) resolution unless the parent chose "fast".
         const resolution = task.cover && quality !== 'fast' ? undefined : pickResolution(imageModel, quality)
-        update(task.key, { state: 'run' })
+        const sent = who.map(w => `${w.label}: ${w.to - w.from + 1} ảnh`).join(', ')
+        update(task.key, { state: 'run', refs: sent || 'không có người' })
         for (let attempt = 0; attempt < 2 && !stop.current; attempt++) {
           try {
             const view = await submit<JobView>('generate', code, { model: imageModel.id, prompt: task.cover ? coverPrompt(plan.title, task.scene, who) : scenePrompt(task.scene, who), ...(task.cover ? { title: plan.title } : {}), images, ...(ratio ? { ratio } : {}), ...(resolution ? { resolution } : {}), consent: true, costAccepted: true })
@@ -290,7 +307,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
     </ol>
     {tasks.length > 0 && <div className="gw-gallery">{tasks.map(t => <figure key={t.key} className={`gw-tile ${t.state}${t.cover ? ' cover' : ''}`}>
       {t.url ? <img src={t.url} alt={t.scene} /> : <span className="gw-tile-wait">{t.state === 'fail' ? '😕' : <span className="xs-spinner" />}</span>}
-      <figcaption>{t.cover ? 'Bìa' : t.label}{t.note ? <small>{t.note}</small> : null}</figcaption>
+      <figcaption>{t.cover ? 'Bìa' : t.label}{t.refs ? <small className="gw-refs">📎 Ảnh tham chiếu đã gửi · {t.refs}</small> : null}{t.note ? <small>{t.note}</small> : null}</figcaption>
     </figure>)}</div>}
     {plan && <details className="gw-plan"><summary>Xem kịch bản: {plan.questions.length} câu hỏi</summary>
       <ol>{plan.questions.map((q, i) => <li key={i}>{q.text}</li>)}</ol></details>}
@@ -310,6 +327,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
 
     <div className="gw-block">
       <h3><b>1</b> Ai có mặt trong trò chơi?</h3>
+      <p className="gw-tips">📸 Để tranh <b>giống bé</b>: dùng 2–3 ảnh chụp gần, rõ mặt, đủ sáng (một ảnh chính diện, một ảnh hơi nghiêng); mỗi ảnh chỉ có một người; không đeo kính, khẩu trang, mũ che tóc; không dùng ảnh đã qua bộ lọc làm đẹp.</p>
       <div className="gw-people">
         {people.map(p => <div key={p.id} className={`gw-person${p.id === 'be' ? ' main' : ''}`}>
           <div className="gw-person-head">
@@ -319,7 +337,7 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
           </div>
           <div className="gw-photos">
             {p.photos.map(ph => <figure key={ph.id}><img src={ph.url} alt="" /><button aria-label="Bỏ ảnh" onClick={() => setPeople(list => list.map(x => x.id === p.id ? { ...x, photos: x.photos.filter(y => y.id !== ph.id) } : x))}>✕</button></figure>)}
-            {p.photos.length < (p.id === 'be' ? 2 : 1) && <label className="gw-drop"><input type="file" accept="image/jpeg,image/png,image/webp" multiple={p.id === 'be'} onChange={e => { void addPhotos(p.id, e.target.files); e.target.value = '' }} /><span aria-hidden="true">📷</span><small>{p.id === 'be' ? 'Ảnh rõ mặt bé' : 'Ảnh rõ mặt'}</small></label>}
+            {p.photos.length < MAX_PHOTOS[p.id] && <label className="gw-drop"><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e => { void addPhotos(p.id, e.target.files); e.target.value = '' }} /><span aria-hidden="true">📷</span><small>{p.photos.length ? 'Thêm góc khác' : p.id === 'be' ? 'Ảnh rõ mặt bé' : 'Ảnh rõ mặt'}</small></label>}
           </div>
         </div>)}
         {people.length < 4 && <button className="gw-add" onClick={addPerson}><span aria-hidden="true">＋</span>Thêm người thân<small>Mẹ, bố, ông bà… cùng vào trò chơi</small></button>}
