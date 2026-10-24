@@ -535,25 +535,26 @@ function KeyPanel({ view, code, busy, run, onSaved, setMessage }: {
       <i aria-hidden="true">{open ? '▴' : '▾'}</i>
     </button>
     {open && <div className="xs-keys-body">
-      <p className="studio-note">{view.defaults.ai34
-        ? 'App đã có sẵn khóa 34AI mặc định, không cần nhập gì cũng tạo được. Muốn dùng tài khoản 34AI của riêng mình thì dán khóa vào đây: khóa chỉ áp dụng trên thiết bị này và được giữ trên máy chủ của app (trình duyệt không lưu khóa).'
-        : 'App chưa có khóa 34AI mặc định. Dán khóa 34AI vào đây để dùng trên thiết bị này; khóa được giữ trên máy chủ của app (trình duyệt không lưu khóa).'}</p>
-      {view.broken?.ai34 && <p className="studio-error"><b>Khóa 34AI mặc định trên máy chủ bị sai định dạng</b> (thường do dán bằng Ctrl+V trong cửa sổ đen nên chỉ lưu được ký tự lạ). Trên máy tính, bấm đúp <code>cai-dat-34ai-netlify.cmd</code> và dán lại khóa.</p>}
-      {!view.store && <p className="studio-error">Máy chủ chưa có kho lưu khóa, nên chưa lưu được khóa riêng. Chạy <code>trien-khai-netlify.cmd</code> bản mới trên máy tính rồi thử lại.</p>}
-      <div className="xs-key-row">
-        <label>{own ? 'Thay khóa riêng' : 'Khóa 34AI của bạn (không bắt buộc)'}
-          <input type="password" autoComplete="off" spellCheck={false} maxLength={220} value={typed} onChange={e => setTyped(e.target.value)} placeholder="34ai_live_…" />
-        </label>
-        <small>{own ? <>Thiết bị này đang dùng <b>{view.hints.ai34}</b>. </> : view.source.ai34 === 'default' ? <>Đang dùng khóa mặc định <b>{view.hints.ai34}</b>. </> : 'Chưa có khóa. '}Lấy khóa ở 34AI → Cài đặt → API key.</small>
-        <div className="studio-actions">
-          <button className="btn" disabled={busy || !view.store || !typed.trim()} onClick={() => void save(typed.trim(), 'Đã lưu khóa riêng cho thiết bị này.')}>Kiểm tra và lưu</button>
-          {view.providers.ai34 && <button className="btn alt" disabled={busy} onClick={() => void run(async () => {
-            const result = await call<{ ok: boolean; message: string }>('keys/test', code, { provider: 'ai34' })
-            if (result.ok) setMessage(result.message); else throw new StudioError(result.message)
-          })}>Thử kết nối</button>}
-          {own && <button className="studio-text-button" disabled={busy} onClick={() => void save('', view.defaults.ai34 ? 'Đã bỏ khóa riêng, thiết bị này dùng lại khóa mặc định của app.' : 'Đã bỏ khóa riêng của thiết bị này.')}>{view.defaults.ai34 ? 'Dùng lại khóa mặc định' : 'Xóa khóa riêng'}</button>}
-        </div>
+      {view.source.ai34 === 'default' && <p className="xs-key-ok">✓ Đang dùng <b>khóa 34AI mặc định của app</b> ({view.hints.ai34}). Không cần nhập gì, mọi thiết bị đều tạo được.</p>}
+      {own && <p className="xs-key-ok">✓ Thiết bị này đang dùng <b>khóa 34AI riêng</b> ({view.hints.ai34}).</p>}
+      {!view.providers.ai34 && !view.broken?.ai34 && <p className="studio-error">App chưa có khóa 34AI mặc định. Chủ app cần đặt biến <code>AI34_API_KEY</code> trên Netlify, hoặc dán khóa riêng bên dưới.</p>}
+      {view.broken?.ai34 && <p className="studio-error"><b>Khóa 34AI mặc định trên máy chủ bị sai định dạng.</b> Chủ app cần sửa biến <code>AI34_API_KEY</code> trên Netlify.</p>}
+      <div className="studio-actions">
+        {view.providers.ai34 && <button className="btn" disabled={busy} onClick={() => void run(async () => {
+          const result = await call<{ ok: boolean; message: string }>('keys/test', code, { provider: 'ai34' })
+          if (result.ok) setMessage(result.message); else throw new StudioError(result.message)
+        })}>Thử kết nối</button>}
+        {own && <button className="studio-text-button" disabled={busy} onClick={() => void save('', view.defaults.ai34 ? 'Đã bỏ khóa riêng, thiết bị này dùng lại khóa mặc định của app.' : 'Đã bỏ khóa riêng của thiết bị này.')}>{view.defaults.ai34 ? 'Dùng lại khóa mặc định' : 'Xóa khóa riêng'}</button>}
       </div>
+      <details className="xs-key-more" open={!view.providers.ai34 || undefined}>
+        <summary>{own ? 'Thay khóa 34AI riêng' : 'Dùng khóa 34AI của riêng tôi (không bắt buộc)'}</summary>
+        <div className="xs-key-row">
+          <small>Khóa riêng chỉ áp dụng trên thiết bị này, được giữ trên máy chủ của app (trình duyệt không lưu khóa). Lấy khóa ở 34AI → Cài đặt → API key.</small>
+          <input type="password" aria-label="Khóa 34AI riêng" autoComplete="off" spellCheck={false} maxLength={220} value={typed} onChange={e => setTyped(e.target.value)} placeholder="34ai_live_…" />
+          {!view.store && <small className="studio-error">Máy chủ chưa có kho lưu khóa, nên chưa lưu được khóa riêng.</small>}
+          <div className="studio-actions"><button className="btn alt" disabled={busy || !view.store || !typed.trim()} onClick={() => void save(typed.trim(), 'Đã lưu khóa riêng cho thiết bị này.')}>Kiểm tra và lưu</button></div>
+        </div>
+      </details>
     </div>}
   </section>
 }

@@ -62,6 +62,8 @@ export async function handle(request, env, { fetch: given } = {}) {
         try { response = await fetchFor('ai34')(`${AI34_BASE}/v1/models`, { headers: { Authorization: `Bearer ${ctx.keys.ai34}` }, signal: AbortSignal.timeout(15000) }) }
         catch { return json({ ok: false, message: '34AI chưa phản hồi (lỗi kết nối). Thử lại sau ít phút.' }) }
         const data = await response.json().catch(() => ({}))
+        if (response.status >= 500) return json({ ok: false, message: `Máy chủ 34AI đang tạm thời không phản hồi (lỗi ${response.status} từ phía 34AI), không phải do khóa. Hãy thử lại sau ít phút.` })
+        if (response.status === 401) return json({ ok: false, message: '34AI từ chối khóa này (khóa sai hoặc đã bị thu hồi). Kiểm tra lại khóa trong 34AI → Cài đặt → API key.' })
         if (!response.ok) return json({ ok: false, message: `34AI báo: ${cleanReason(`${data?.error?.code ?? ''} ${data?.error?.message ?? ''}`) || `HTTP ${response.status}`}` })
         const list = Array.isArray(data.data) ? data.data : []
         const count = t => list.filter(m => m.media_type === t).length

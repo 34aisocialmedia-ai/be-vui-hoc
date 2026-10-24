@@ -3685,3 +3685,6 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 .xs-models-bar .studio-text-button { white-space: nowrap; }
 @media (min-width: 761px) { .kid-brand .brand-logo { width: 64px; height: 64px; } }
 /* ==== DOT-E END ==== */
+/* Khóa API 34AI: trạng thái rõ ràng */
+.xs-key-ok { margin: 0; padding: 12px 14px; border-radius: 14px; background: #e6f6ec; color: #1f6b47; font-weight: 600; }
+.xs-key-more .xs-key-row { margin-top: 10px; }
