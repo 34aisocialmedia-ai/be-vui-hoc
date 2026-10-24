@@ -78,3 +78,20 @@ test('the game-plan endpoint needs cost consent and returns the parsed plan', as
   assert.equal(out.plan.scenes.length, 3)
   assert.equal(seen[0].max_tokens, 4000)
 })
+
+test('only a cover may carry text, and only the game title', async () => {
+  const { safePrompt, cleanTitle } = await import('../lib/safe-prompt.js')
+  assert.match(safePrompt('Cảnh', 'image'), /không có chữ, logo hay hình mờ/)
+  const cover = safePrompt('Bìa', 'image', { title: 'Na "tự" làm lấy' })
+  assert.match(cover, /không có chữ nào khác ngoài dòng tiêu đề "Na tự làm lấy"/)
+  assert.doesNotMatch(safePrompt('Clip', 'video', { title: 'Na' }), /tiêu đề/)
+  assert.equal(cleanTitle('x'.repeat(60)).length, 40)
+  const env = { AI34_API_KEY: '34ai_live_coverTitleKey_1' }
+  const seen = []
+  const fake = () => ({ model: async id => ({ id, media_type: 'image' }), createGeneration: async req => { seen.push(req); return { id: 'gen_1', status: 'queued' } } })
+  const post = body => new Request('https://app.test/api/ai34/generate', { method: 'POST', headers: { Origin: 'https://app.test', 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'img', consent: true, costAccepted: true, idempotencyKey: 'abcdefgh9', ...body }) })
+  await handle(post({ prompt: 'Bìa trò chơi', title: 'Na tự làm lấy' }), env, fake)
+  await handle(post({ prompt: 'Cảnh thường' }), env, fake)
+  assert.match(seen[0].prompt, /ngoài dòng tiêu đề "Na tự làm lấy"/)
+  assert.match(seen[1].prompt, /không có chữ, logo hay hình mờ/)
+})

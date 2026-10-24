@@ -56,10 +56,26 @@ const pickResolution = (m: Ai34Model, quality: Quality) => {
   return list.find(r => /720|1k/i.test(r))
 }
 
+type Refs = { label: string; from: number; to: number }[]
+const whoOf = (refs: Refs) => refs.map(r => `${r.label} giữ đúng khuôn mặt, kiểu tóc và nét đặc trưng của người trong ảnh tham chiếu ${r.from === r.to ? `số ${r.from}` : `số ${r.from}–${r.to}`}`).join('; ')
+
 /** Prompt for one scene: 3D cartoon, the people kept recognisable from their reference photos. */
-export function scenePrompt(scene: string, refs: { label: string; from: number; to: number }[]) {
-  const who = refs.map(r => `${r.label} giữ đúng khuôn mặt, kiểu tóc và nét đặc trưng của người trong ảnh tham chiếu ${r.from === r.to ? `số ${r.from}` : `số ${r.from}–${r.to}`}`).join('; ')
+export function scenePrompt(scene: string, refs: Refs) {
+  const who = whoOf(refs)
   return `Tranh minh họa phong cách hoạt hình 3D dễ thương như phim hoạt hình gia đình, màu tươi sáng, ánh sáng ấm, dùng trong trò chơi cho trẻ mầm non. Cảnh: ${scene}.${who ? ` Nhân vật: ${who}.` : ''} Bố cục đơn giản, hành động rõ ràng ở giữa khung, nền gọn gàng, không có chữ.`
+}
+
+/** Prompt for the cover: the scene plus the game's title as playful, layered 3D lettering. */
+export function coverPrompt(name: string, scene: string, refs: Refs) {
+  const who = whoOf(refs), title = name.replace(/["“”'‘’`]/g, '').trim()
+  return [
+    `Ảnh bìa trò chơi cho trẻ mầm non, khung ngang, phong cách hoạt hình 3D dễ thương như phim hoạt hình gia đình, màu tươi sáng, ánh sáng ấm.`,
+    `TIÊU ĐỀ TRÒ CHƠI: viết chính xác dòng chữ tiếng Việt "${title}" (đúng từng chữ cái và dấu thanh, không thêm, không bớt, không đổi chữ), đặt nổi bật ở phần trên của ảnh, chiếm khoảng một phần ba chiều cao.`,
+    `Kiểu chữ: chữ 3D nhiều lớp ngộ nghĩnh, nét tròn mập như bong bóng hoặc kẹo dẻo; mỗi chữ cái một màu tươi xen kẽ (đỏ, cam, vàng, xanh lá, xanh dương, tím); lớp viền trắng dày bao quanh, ngoài cùng là lớp viền màu đậm; khối 3D nhiều lớp xếp chồng tạo độ dày, bóng đổ mềm phía dưới, ánh sáng bóng loáng trên mặt chữ; các chữ cái hơi nghiêng lên xuống nhảy múa vui nhộn; có vài ngôi sao lấp lánh nhỏ quanh chữ.`,
+    `Chữ to, rõ, dễ đọc, nằm trọn trong khung, không bị nhân vật hay đồ vật che.`,
+    `Cảnh minh họa ở nửa dưới: ${scene}.${who ? ` Nhân vật: ${who}.` : ''} Nhân vật vui tươi, nhìn về phía người xem.`,
+    `Ngoài dòng tiêu đề, không có chữ nào khác.`,
+  ].join(' ')
 }
 
 async function shrink(blob: Blob, max: number): Promise<Blob> {
@@ -183,11 +199,12 @@ export function GameWizard({ code, unlocked, models, voices, voiceModel, childNa
           images.push(...keys)
         }
         const ratio = pickRatio(imageModel, task.cover ? ['16:9', '4:3', '1:1'] : ['1:1', '4:3'])
-        const resolution = pickResolution(imageModel, quality)
+        // The cover carries text: keep the model's own (sharper) resolution unless the parent chose "fast".
+        const resolution = task.cover && quality !== 'fast' ? undefined : pickResolution(imageModel, quality)
         update(task.key, { state: 'run' })
         for (let attempt = 0; attempt < 2 && !stop.current; attempt++) {
           try {
-            const view = await submit<JobView>('generate', code, { model: imageModel.id, prompt: scenePrompt(task.scene, who), images, ...(ratio ? { ratio } : {}), ...(resolution ? { resolution } : {}), consent: true, costAccepted: true })
+            const view = await submit<JobView>('generate', code, { model: imageModel.id, prompt: task.cover ? coverPrompt(plan.title, task.scene, who) : scenePrompt(task.scene, who), ...(task.cover ? { title: plan.title } : {}), images, ...(ratio ? { ratio } : {}), ...(resolution ? { resolution } : {}), consent: true, costAccepted: true })
             const fin = await follow(code, view.id, 'image', v => update(task.key, { note: v.label ?? undefined }))
             if (fin.status !== 'completed') throw new StudioError(fin.error?.message ?? 'Không vẽ được cảnh này.')
             const blob = await shrink(await download(code, view.id, 0), task.cover ? 1280 : 768)

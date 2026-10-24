@@ -86,7 +86,7 @@ export async function handle(request, env, makeClient = createAi34) {
       consented(body)
       const m = await ai.model(String(body.model ?? ''), ['image', 'video'])
       const job = await ai.createGeneration({
-        model: m.id, prompt: safePrompt(String(body.prompt ?? ''), m.media_type), images: body.images ?? [],
+        model: m.id, prompt: safePrompt(String(body.prompt ?? ''), m.media_type, { title: body.title }), images: body.images ?? [],
         ratio: body.ratio, duration: body.duration === undefined ? undefined : Number(body.duration),
         resolution: body.resolution, quality: body.quality, inputMode: body.inputMode, pro: body.pro === true,
       }, idempotencyKey(body))
