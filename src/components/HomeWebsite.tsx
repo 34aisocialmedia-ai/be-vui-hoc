@@ -21,6 +21,8 @@ interface Props {
   onPlayGame: (game: Game) => void
   onOpenCollection: () => void
   onOpenAdult: () => void
+  /** Opens the studio straight on "make a game with my child". */
+  onCreateGame?: () => void
   totalCollected: number
   sound: boolean
   onToggleSound: () => void
@@ -40,8 +42,8 @@ export function AgeSwitch({ age, onAgeChange }: { age: AgeId; onAgeChange: (age:
     </button>)}
   </div>
 }
-export function GameLibrary({ age, domain = 'all', plays, onAgeChange, onPlayGame, showAges = true, heading = 'Chọn một trò' }: {
-  age: AgeId; domain?: DomainId | 'all'; plays: Record<string, number>
+export function GameLibrary({ age, domain = 'all', plays, onAgeChange, onPlayGame, onCreateGame, showAges = true, heading = 'Chọn một trò' }: {
+  age: AgeId; domain?: DomainId | 'all'; plays: Record<string, number>; onCreateGame?: () => void
   onAgeChange: (age: AgeId) => void; onPlayGame: (game: Game) => void; showAges?: boolean; heading?: string
 }) {
   const [selection, setSelection] = useState(() => librarySelections.get(age) ?? initialSelection)
@@ -60,7 +62,10 @@ export function GameLibrary({ age, domain = 'all', plays, onAgeChange, onPlayGam
         {id === 'all' ? 'Tất cả' : CATEGORY_INFO[id].label}
       </button>)}
     </div>
-    {selection.style !== 'adventure' && <button className="new-play-link" onClick={() => select({category:'all',style:'adventure',page:0})}>Thử cách chơi mới</button>}
+    {(selection.style !== 'adventure' || onCreateGame) && <div className="library-actions">
+      {selection.style !== 'adventure' && <button className="new-play-link" onClick={() => select({category:'all',style:'adventure',page:0})}>Thử cách chơi mới</button>}
+      {onCreateGame && <button className="create-game-link" onClick={onCreateGame}><span aria-hidden="true">✨</span>Tự tạo trò chơi mới</button>}
+    </div>}
     <div className="library-heading"><h2>{heading}</h2><select aria-label="Lọc theo cách chơi" value={selection.style} onChange={e => select({style:e.target.value as PlayStyle | 'all', page:0})}>
       <option value="all">Mọi cách chơi</option>{Object.entries(PLAY_STYLES).map(([id,label]) => <option key={id} value={id}>{label}</option>)}
     </select></div>
@@ -79,7 +84,7 @@ export function GameLibrary({ age, domain = 'all', plays, onAgeChange, onPlayGam
     {!list.length && <div className="empty-world"><p>Chọn chủ đề khác nhé!</p><button className="btn" onClick={() => select(initialSelection)}>Tất cả trò chơi</button></div>}
   </section>
 }
-export function HomeWebsite({ onPlayGame, onOpenCollection, onOpenAdult, totalCollected, sound, onToggleSound, age, onAgeChange, plays, doors }: Props) {
+export function HomeWebsite({ onPlayGame, onOpenCollection, onOpenAdult, onCreateGame, totalCollected, sound, onToggleSound, age, onAgeChange, plays, doors }: Props) {
   const banner = useAssigned('banner')
   const hello = useAssigned('hello')
   const family = useFamilyGames().filter(f => f.asset.target === 'home')
@@ -95,7 +100,7 @@ export function HomeWebsite({ onPlayGame, onOpenCollection, onOpenAdult, totalCo
       <div className="kid-tools">
         <button className="kid-tool" aria-label={sound ? 'Tắt âm thanh' : 'Bật âm thanh'} aria-pressed={sound} onClick={onToggleSound}><UiIcon name={sound?'sound':'mute'}/></button>
         <button className="kid-tool treasure-tool" aria-label={`Kho báu, ${totalCollected} nhãn dán`} onClick={onOpenCollection}><UiIcon name="gift"/><span>{totalCollected}</span></button>
-        <button className="parent-tool" aria-label="Cài đặt dành cho phụ huynh" onClick={onOpenAdult}><UiIcon name="parent" size={20}/><span>Ba mẹ</span></button>
+        <button className="parent-tool" aria-label="Khu phụ huynh" onClick={onOpenAdult}><UiIcon name="parent" size={20}/><span>Ba mẹ</span></button>
       </div>
     </header>
     {/* The greeting banner, or the family banner a parent made in the creative studio. */}
@@ -114,7 +119,7 @@ export function HomeWebsite({ onPlayGame, onOpenCollection, onOpenAdult, totalCo
         <b>{spec.title}</b><small>{spec.questions.length} câu · {AGES.find(a => a.id === spec.age)?.label}</small>
       </button>)}</div>
     </section>}
-    <GameLibrary age={age} plays={plays} onAgeChange={onAgeChange} onPlayGame={onPlayGame} showAges={false} heading="Tất cả trò chơi"/>
+    <GameLibrary age={age} plays={plays} onAgeChange={onAgeChange} onPlayGame={onPlayGame} onCreateGame={onCreateGame} showAges={false} heading="Tất cả trò chơi"/>
     <footer className="kid-footer">Bé chơi vui · Bé lớn khôn</footer>
   </main>
 }

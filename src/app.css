@@ -3786,3 +3786,8 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 .card-visual-media img.learning-photo[src^="blob:"] { object-fit: cover; border-radius: 26px; border: 5px solid #fff; box-shadow: 0 6px 0 #00000012, 0 10px 18px #2a1a3a1f; }
 .gw-tips { margin: -4px 0 12px; padding: 10px 14px; border-radius: 14px; background: #fff8e6; color: #6a5323; font-size: .86rem; line-height: 1.5; }
 .gw-tile figcaption .gw-refs { color: #2f7d5f; font-weight: 700; }
+.library-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
+.library-actions .new-play-link { margin: 0; }
+.create-game-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 10px 18px; border: 0; border-radius: 20px; font: inherit; font-size: .9rem; font-weight: 900; color: #fff; cursor: pointer; background: linear-gradient(100deg, #6d4ad8, #a24fd0 60%, #ff8a4c); box-shadow: 0 4px 0 #3d2a8f; }
+.create-game-link:active { transform: translateY(3px); box-shadow: 0 1px 0 #3d2a8f; }
+.create-game-link:focus-visible { outline: 3px solid #ffd166; outline-offset: 3px; }

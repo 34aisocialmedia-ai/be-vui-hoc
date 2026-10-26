@@ -30,7 +30,7 @@ type Route =
   | { n: 'episode'; game: Game; index: number }
   | { n: 'collection' }
   | { n: 'adult' }
-  | { n: 'studio' }
+  | { n: 'studio'; from?: 'home' }
 
 function AdultGate({ onPass, onCancel }: { onPass: () => void; onCancel: () => void }) {
   const [a] = useState(() => 3 + Math.floor(Math.random() * 6))
@@ -184,7 +184,8 @@ export default function App() {
         <HomeWebsite
           onPlayGame={(game) => go({ n: 'play', game, run: 0 })}
           onOpenCollection={() => go({ n: 'collection' })}
-          onOpenAdult={() => needAdult(() => go({ n: 'adult' }))}
+          onOpenAdult={() => { playPop(); go({ n: 'adult' }) }}
+          onCreateGame={() => { playPop(); go({ n: 'studio', from: 'home' }) }}
           totalCollected={totalCollected}
           sound={save.settings.sound}
           onToggleSound={toggleSound}
@@ -283,7 +284,7 @@ export default function App() {
       break
 
     case 'studio':
-      screen = <Suspense fallback={<p className="studio-suspense">Đang mở xưởng sáng tạo…</p>}><Studio onBack={() => go({ n: 'adult' })} onPlayGame={game => go({ n: 'play', game, run: 0 })}/></Suspense>
+      screen = <Suspense fallback={<p className="studio-suspense">Đang mở xưởng sáng tạo…</p>}><Studio onBack={() => go({ n: route.from === 'home' ? 'home' : 'adult' })} onPlayGame={game => go({ n: 'play', game, run: 0 })}/></Suspense>
       break
 
     case 'adult':
