@@ -19,6 +19,8 @@ import { MODES, episodesFor, journeyFor, modeOf, nextJourney, wishesFor, type Mo
 import type { Finale } from './player/types'
 import { applyMotionLevel, type MotionLevel } from './motion/motion'
 import { ArtDefs } from './art/index'
+import { RestBreak } from './components/RestBreak'
+import { afterRest, readPlayTime, resume, tick, writePlayTime, type PlayTime } from './playTime'
 
 type Route =
   | { n: 'home' }
@@ -80,9 +82,11 @@ export default function App() {
   const [save, update] = useSave()
   const [route, setRoute] = useState<Route>({ n: 'home' })
   const [gate, setGate] = useState<null | (() => void)>(null)
-  const [rest, setRest] = useState(false)
+  // Play time since the last rest (kept on the device); the rest popup shows while `restUntil` is set.
+  const [time, setTime] = useState<PlayTime>(() => readPlayTime())
+  const rest = time.restUntil !== undefined
   const [selectedAge, setSelectedAge] = useState<AgeId>(save.preferredAge)
-  const playClock = useRef({ elapsed: 0, lastTick: performance.now() })
+  const lastTick = useRef(performance.now())
   // A game just finished from one of the three modes, celebrated when the child returns there.
   const [win, setWin] = useState<Win | null>(null)
   const journey = useMemo(() => journeyFor(save.journey, selectedAge, save.plays), [save.journey, selectedAge, save.plays])
@@ -109,31 +113,34 @@ export default function App() {
   }
   const toggleSound = () => update(s => ({ ...s, settings: { ...s.settings, sound: !s.settings.sound } }))
 
-  // Count only foreground play, keeping the allowance across game changes.
+  // Count foreground time on the child's screens (from the first game on, across games, the home page
+  // and reloads); the parents' area and the studio do not count.
   useEffect(() => {
-    playClock.current.lastTick = performance.now()
+    lastTick.current = performance.now()
     const id = setInterval(() => {
       const now = performance.now()
-      const delta = Math.min(now - playClock.current.lastTick, 2500)
-      playClock.current.lastTick = now
-      if (route.n !== 'play' || rest || gate || document.hidden) return
-      playClock.current.elapsed += delta
-      if (save.settings.limit > 0 && playClock.current.elapsed >= save.settings.limit * 60000) {
-        setRest(true)
-        stopSpeech()
-        if (save.settings.sound) speak('Đã đến giờ nghỉ ngơi rồi! Con hãy đứng dậy vươn vai và uống nước nhé!')
-      }
+      const delta = Math.min(now - lastTick.current, 2500)
+      lastTick.current = now
+      const counting = !document.hidden && !gate && route.n !== 'adult' && route.n !== 'studio'
+      setTime(t => tick(t, { now: Date.now(), delta, counting, limitMinutes: save.settings.limit }))
     }, 1000)
-    const visibility = () => { playClock.current.lastTick = performance.now() }
+    const visibility = () => { lastTick.current = performance.now() }
     document.addEventListener('visibilitychange', visibility)
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', visibility) }
-  }, [save.settings.limit, save.settings.sound, rest, gate, route.n])
+  }, [save.settings.limit, gate, route.n])
+  useEffect(() => { writePlayTime(time) }, [time])
+  // The moment the limit is reached: stop what is being read and say why the game pauses.
+  useEffect(() => {
+    if (!rest) return
+    stopSpeech()
+    if (save.settings.sound) speak(`Con đã chơi ${save.settings.limit} phút rồi! Mình nghỉ một chút nhé: uống nước, vươn vai và nhìn ra xa cho mắt thật khỏe.`)
+  }, [rest])
 
   const go = (r: Route) => {
     stopSpeech()
     playPop()
     window.scrollTo({ top: 0, behavior: 'instant' })
-    if (r.n === 'home') playClock.current.elapsed = 0
+    if (r.n === 'play') setTime(t => t.started ? t : { ...resume(t, Date.now()), started: true })
     setRoute(r)
   }
   const needAdult = (fn: () => void) => {
@@ -298,28 +305,9 @@ export default function App() {
       <ArtDefs />
       <div {...(gate || rest ? { inert: '' } : {})}>{screen}</div>
 
-      {rest && (
-        <div className="overlay" role="dialog" aria-modal="true" aria-label="Nghỉ ngơi" {...(gate ? { inert: '' } : {})}>
-          <div className="bigemoji pop-bounce">⏰</div>
-          <h1 className="rainbow-title">Nghỉ một chút nhé!</h1>
-          <div className="rest-pictures" aria-label="Uống nước, vươn vai, nghỉ mắt">💧 🧘 🌳</div>
-          <Mascot mood="encourage" />
-          <button className="btn alt" onClick={() => { setRest(false); go({ n: 'home' }) }}>🏠 Về nhà</button>
-          <button
-            className="btn juicy-btn"
-            style={{ marginTop: '20px' }}
-            onClick={() =>
-              needAdult(() => {
-                playClock.current.elapsed = 0
-                playClock.current.lastTick = performance.now()
-                setRest(false)
-              })
-            }
-          >
-            🔒 Người lớn cho chơi tiếp
-          </button>
-        </div>
-      )}
+      {rest && <RestBreak time={time} limit={save.settings.limit} sound={save.settings.sound} blocked={!!gate}
+        onDone={() => setTime(afterRest(Date.now()))}
+        onAdult={() => needAdult(() => setTime(afterRest(Date.now())))} />}
       {gate && <AdultGate onPass={() => { const f = gate; setGate(null); f(); }} onCancel={() => setGate(null)} />}
     </>
   )

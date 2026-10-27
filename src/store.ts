@@ -3,12 +3,15 @@ import type { AgeId } from './types'
 import { defaultMotionLevel, type MotionLevel } from './motion/motion'
 import type { Journey } from './modes'
 import type { CompanionKind } from './motion/Companion'
+import { DEFAULT_LIMIT } from './playTime'
 
 export interface Settings {
   sound: boolean
   rewards: boolean
   /** Số phút chơi tối đa mỗi lần trước khi nhắc nghỉ; 0 = tắt */
   limit: number
+  /** Phiên bản của cài đặt nhắc nghỉ (2 = mặc định 30 phút). */
+  limitV?: number
   /** Hiệu ứng chuyển động do phụ huynh chọn; mặc định theo cài đặt giảm chuyển động của máy */
   motion: MotionLevel
 }
@@ -31,7 +34,7 @@ const DEFAULT: Save = {
   collection: {},
   plays: {},
   rewardedSessions: [],
-  settings: { sound: true, rewards: true, limit: 15, motion: 'full' },
+  settings: { sound: true, rewards: true, limit: DEFAULT_LIMIT, motion: 'full' },
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -59,8 +62,10 @@ export function normalizeSave(value: unknown): Save {
     settings: {
       sound: typeof settings.sound === 'boolean' ? settings.sound : DEFAULT.settings.sound,
       rewards: typeof settings.rewards === 'boolean' ? settings.rewards : DEFAULT.settings.rewards,
-      limit: typeof settings.limit === 'number' && [0, 5, 10, 15, 20].includes(settings.limit)
-        ? settings.limit : DEFAULT.settings.limit,
+      // 15 minutes was the old default: saves from before the 30-minute default move to it.
+      limit: typeof settings.limit === 'number' && [0, 5, 10, 15, 20, 30, 45, 60].includes(settings.limit)
+        ? (settings.limit === 15 && settings.limitV !== 2 ? DEFAULT.settings.limit : settings.limit) : DEFAULT.settings.limit,
+      limitV: 2,
       motion: settings.motion === 'full' || settings.motion === 'light' || settings.motion === 'off'
         ? settings.motion : defaultMotionLevel(),
     },

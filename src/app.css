@@ -3791,3 +3791,34 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 .create-game-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 10px 18px; border: 0; border-radius: 20px; font: inherit; font-size: .9rem; font-weight: 900; color: #fff; cursor: pointer; background: linear-gradient(100deg, #6d4ad8, #a24fd0 60%, #ff8a4c); box-shadow: 0 4px 0 #3d2a8f; }
 .create-game-link:active { transform: translateY(3px); box-shadow: 0 1px 0 #3d2a8f; }
 .create-game-link:focus-visible { outline: 3px solid #ffd166; outline-offset: 3px; }
+
+/* ==================== Nhắc nghỉ sau thời gian chơi ==================== */
+.rest-break { background: radial-gradient(120% 90% at 50% 0%, #fff4d6f5, #fde9f0f5 55%, #e6f3fff5); backdrop-filter: blur(6px); }
+.rest-card { width: min(520px, 100%); display: grid; justify-items: center; gap: 12px; padding: 26px 22px 22px; border-radius: 32px; background: #fff; box-shadow: 0 10px 0 #f3d9a8, 0 24px 50px #8a5a1a26; animation: restIn .45s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes restIn { from { opacity: 0; transform: scale(.85) translateY(20px); } }
+@media (prefers-reduced-motion: reduce) { .rest-card { animation: none; } }
+.rest-badge { padding: 5px 14px; border-radius: 999px; background: #ffe3a3; color: #7a4b00; font-weight: 900; font-size: .85rem; }
+.rest-card h1 { margin: 0; font-family: 'Baloo 2', 'Nunito', sans-serif; font-weight: 800; font-size: clamp(1.5rem, 5vw, 2rem); line-height: 1.15; color: #23324a; }
+.rest-lead { margin: 0; color: #5d6f66; font-weight: 700; }
+.rest-main { display: flex; align-items: center; justify-content: center; gap: 18px; }
+.rest-main .mascot-wrap, .rest-main .mascot-wrap img { height: 120px; }
+.rest-timer { position: relative; width: 130px; height: 130px; display: grid; place-items: center; align-content: center; }
+.rest-timer svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.rest-ring-bg { fill: #fff8ea; stroke: #f2e6cf; stroke-width: 10; }
+.rest-ring { fill: none; stroke: #2f9a6f; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .5s linear; }
+.rest-timer b { position: relative; font-family: 'Baloo 2', 'Nunito', sans-serif; font-size: 2rem; line-height: 1; color: #23324a; font-variant-numeric: tabular-nums; }
+.rest-timer small { position: relative; font-weight: 800; color: #7a8a80; font-size: .8rem; }
+.rest-activities { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; }
+.rest-activities button { display: grid; justify-items: center; gap: 4px; padding: 10px 4px; border: 0; border-radius: 18px; background: #f3f7ff; font: inherit; color: #23324a; cursor: pointer; box-shadow: 0 3px 0 #dfe7f5; }
+.rest-activities button:active { transform: translateY(2px); box-shadow: 0 1px 0 #dfe7f5; }
+.rest-activities span { font-size: 2rem; line-height: 1; }
+.rest-activities b { font-size: .82rem; }
+.rest-go { width: 100%; min-height: 56px; font-size: 1.15rem; }
+.rest-go:disabled { opacity: .55; filter: grayscale(.4); cursor: not-allowed; }
+.rest-adult { border: 0; background: transparent; color: #6d4ad8; font: inherit; font-weight: 800; font-size: .9rem; text-decoration: underline; text-underline-offset: 4px; min-height: 44px; cursor: pointer; }
+@media (max-width: 420px) {
+  .rest-card { padding: 20px 14px 16px; border-radius: 26px; }
+  .rest-activities { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rest-main .mascot-wrap, .rest-main .mascot-wrap img { height: 96px; }
+  .rest-timer { width: 112px; height: 112px; }
+}

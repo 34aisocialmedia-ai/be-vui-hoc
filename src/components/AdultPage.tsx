@@ -7,6 +7,7 @@ import { TEACHER_INTRO } from '../teacherVoice'
 import type { MotionLevel } from '../motion/motion'
 import { UiIcon } from './UiIcon'
 import { PlaytestPanel } from './PlaytestPanel'
+import { DEFAULT_LIMIT, LIMIT_CHOICES, REST_MS } from '../playTime'
 
 interface Settings { sound: boolean; rewards: boolean; limit: number; motion: MotionLevel }
 
@@ -52,11 +53,12 @@ export function AdultPage({ settings, plays, onChange, onBack, onStudio }: {
       <div className="ap-card">
         <h2>⏱️ Thời gian chơi</h2>
         <Toggle checked={settings.rewards} onChange={v => onChange({ rewards: v })} label="Phần thưởng sau mỗi lượt chơi" />
-        <label className="ap-field"><span>Nhắc bé nghỉ mắt sau</span>
+        <label className="ap-field"><span>Nhắc bé nghỉ sau khi chơi</span>
           <select value={settings.limit} onChange={e => onChange({ limit: Number(e.target.value) })}>
-            <option value={0}>Không nhắc</option><option value={5}>5 phút</option><option value={10}>10 phút</option><option value={15}>15 phút</option><option value={20}>20 phút</option>
+            {[...LIMIT_CHOICES, ...(LIMIT_CHOICES.includes(settings.limit as never) ? [] : [settings.limit])].map(m => <option key={m} value={m}>{m === 0 ? 'Không nhắc' : `${m} phút${m === DEFAULT_LIMIT ? ' (khuyên dùng)' : ''}`}</option>)}
           </select>
         </label>
+        {settings.limit > 0 && <p className="ap-hint">Sau {settings.limit} phút chơi, app hiện lời nhắc và cho bé nghỉ {REST_MS / 60000} phút. Người lớn có thể cho chơi tiếp ngay.</p>}
         <label className="ap-field"><span>Hiệu ứng chuyển động</span>
           <select value={settings.motion} onChange={e => onChange({ motion: e.target.value as MotionLevel })}>
             <option value="full">Đầy đủ</option><option value="light">Nhẹ nhàng</option><option value="off">Tắt</option>

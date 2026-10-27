@@ -64,7 +64,7 @@ test('loading older or invalid saves preserves valid progress and merges default
   assert.deepEqual(save.plays, { one: 3 })
   assert.equal(save.settings.sound, false)
   assert.equal(save.settings.rewards, true)
-  assert.equal(save.settings.limit, 15)
+  assert.equal(save.settings.limit, 30)
   assert.ok(['full', 'light', 'off'].includes(save.settings.motion), 'motion setting falls back to a valid level')
   assert.equal(normalizeSave({ settings: { motion: 'off' } }).settings.motion, 'off')
   assert.equal(normalizeSave({ settings: { motion: 'wild' } }).settings.motion, 'full')
