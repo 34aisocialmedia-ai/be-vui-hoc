@@ -3827,7 +3827,7 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 body.no-scroll { overflow: hidden; }
 .family-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; }
 .family-head h2 { margin: 0 !important; }
-.family-store-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 42px; padding: 8px 14px; border: 2px solid #ffd2a8; border-radius: 999px; background: #fff; font: inherit; font-weight: 800; font-size: .88rem; color: #8a4b12; cursor: pointer; box-shadow: 0 3px 0 #ffe3c6; }
+.family-store-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border: 2px solid #ffd2a8; border-radius: 999px; background: #fff; font: inherit; font-weight: 800; font-size: .88rem; color: #8a4b12; cursor: pointer; box-shadow: 0 3px 0 #ffe3c6; }
 .family-store-btn b { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: #ff8a3d; color: #fff; font-size: .75rem; }
 .family-row-wrap { position: relative; }
 .family-game-row { scroll-behavior: smooth; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-padding-left: 2px; }

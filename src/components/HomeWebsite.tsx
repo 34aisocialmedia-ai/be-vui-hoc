@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useAssigned } from '../studio/media'
-import { FamilyShelf } from './FamilyShelf'
+import { FamilyShelf, FamilyStoreButton } from './FamilyShelf'
 import type { AgeId, DomainId, Game, CurriculumCategory } from '../types'
 import { AGES } from '../types'
 import { gamesFor } from '../data/games'
@@ -64,6 +64,7 @@ export function GameLibrary({ age, domain = 'all', plays, onAgeChange, onPlayGam
     {(selection.style !== 'adventure' || onCreateGame) && <div className="library-actions">
       {selection.style !== 'adventure' && <button className="new-play-link" onClick={() => select({category:'all',style:'adventure',page:0})}>Thử cách chơi mới</button>}
       {onCreateGame && <button className="create-game-link" onClick={onCreateGame}><span aria-hidden="true">✨</span>Tự tạo trò chơi mới</button>}
+      {onCreateGame && <FamilyStoreButton onPlayGame={onPlayGame} onCreateGame={onCreateGame} />}
     </div>}
     <div className="library-heading"><h2>{heading}</h2><select aria-label="Lọc theo cách chơi" value={selection.style} onChange={e => select({style:e.target.value as PlayStyle | 'all', page:0})}>
       <option value="all">Mọi cách chơi</option>{Object.entries(PLAY_STYLES).map(([id,label]) => <option key={id} value={id}>{label}</option>)}
@@ -110,7 +111,7 @@ export function HomeWebsite({ onPlayGame, onOpenCollection, onOpenAdult, onCreat
       : <HomeBanner onHello={greet} />}
     <AgeSwitch age={age} onAgeChange={onAgeChange} />
     {doors}
-    <FamilyShelf onPlayGame={onPlayGame} onCreateGame={onCreateGame} />
+    <FamilyShelf onPlayGame={onPlayGame} />
     <GameLibrary age={age} plays={plays} onAgeChange={onAgeChange} onPlayGame={onPlayGame} onCreateGame={onCreateGame} showAges={false} heading="Tất cả trò chơi"/>
     <footer className="kid-footer">Bé chơi vui · Bé lớn khôn</footer>
   </main>

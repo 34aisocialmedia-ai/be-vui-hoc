@@ -11,23 +11,19 @@ const ageOf = (e: FamilyEntry) => AGES.find(a => a.id === e.spec.age)?.label
  * "Trò chơi của nhà mình": every game made in the studio lives in the family's store (kho).
  * Each game has an add-on switch; the games switched on appear on the home page in a row that scrolls sideways.
  */
-export function FamilyShelf({ onPlayGame, onCreateGame }: { onPlayGame: (game: Game) => void; onCreateGame?: () => void }) {
-  const all = useFamilyGames()
-  const shown = all.filter(f => f.asset.target === 'home')
-  const [open, setOpen] = useState(false)
+export function FamilyShelf({ onPlayGame }: { onPlayGame: (game: Game) => void }) {
+  const shown = useFamilyGames().filter(f => f.asset.target === 'home')
   const row = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState({ start: true, end: true })
   const measure = () => { const el = row.current; if (el) setEdges({ start: el.scrollLeft <= 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 }) }
   useEffect(() => { measure(); window.addEventListener('resize', measure); return () => window.removeEventListener('resize', measure) }, [shown.length])
   const slide = (dir: 1 | -1) => { const el = row.current; if (el) el.scrollBy({ left: dir * Math.max(200, el.clientWidth * .8), behavior: 'smooth' }) }
-  if (!all.length) return null
+  // Only games switched on in the store appear; with none, the home page stays as it was.
+  if (!shown.length) return null
 
   return <section className="family-games" aria-label="Trò chơi của nhà mình">
-    <div className="family-head">
-      <h2>Trò chơi của nhà mình</h2>
-      <button className="family-store-btn" onClick={() => { playPop(); setOpen(true) }}><span aria-hidden="true">📦</span>Kho trò chơi<b>{all.length}</b></button>
-    </div>
-    {shown.length ? <div className="family-row-wrap">
+    <h2>Trò chơi của nhà mình</h2>
+    <div className="family-row-wrap">
       {!edges.start && <button className="family-arrow prev" aria-label="Xem các trò trước" onClick={() => slide(-1)}>‹</button>}
       <div className="family-game-row" ref={row} onScroll={measure}>{shown.map(({ asset, spec, game, cover }) =>
         <button key={asset.id} className="family-game" aria-label={`Chơi ${spec.title}`} onClick={() => { playPop(); onPlayGame(game) }}>
@@ -37,9 +33,18 @@ export function FamilyShelf({ onPlayGame, onCreateGame }: { onPlayGame: (game: G
       </div>
       {!edges.end && <button className="family-arrow next" aria-label="Xem các trò tiếp theo" onClick={() => slide(1)}>›</button>}
     </div>
-      : <button className="family-empty" onClick={() => setOpen(true)}><span aria-hidden="true">📦</span>Có {all.length} trò trong kho. Mở kho và bật trò muốn hiện ở đây.</button>}
-    {open && <FamilyStore list={all} onClose={() => setOpen(false)} onPlay={game => { setOpen(false); onPlayGame(game) }} onCreate={onCreateGame && (() => { setOpen(false); onCreateGame() })} />}
   </section>
+}
+
+/** The "Kho trò chơi" button (next to "Tự tạo trò chơi mới"); hidden while the store is empty. */
+export function FamilyStoreButton({ onPlayGame, onCreateGame }: { onPlayGame: (game: Game) => void; onCreateGame?: () => void }) {
+  const all = useFamilyGames()
+  const [open, setOpen] = useState(false)
+  if (!all.length) return null
+  return <>
+    <button className="family-store-btn" onClick={() => { playPop(); setOpen(true) }}><span aria-hidden="true">📦</span>Kho trò chơi<b>{all.length}</b></button>
+    {open && <FamilyStore list={all} onClose={() => setOpen(false)} onPlay={game => { setOpen(false); onPlayGame(game) }} onCreate={onCreateGame && (() => { setOpen(false); onCreateGame() })} />}
+  </>
 }
 
 function FamilyStore({ list, onClose, onPlay, onCreate }: { list: FamilyEntry[]; onClose: () => void; onPlay: (game: Game) => void; onCreate?: () => void }) {
