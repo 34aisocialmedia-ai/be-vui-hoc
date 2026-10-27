@@ -36,13 +36,12 @@ export function FamilyShelf({ onPlayGame }: { onPlayGame: (game: Game) => void }
   </section>
 }
 
-/** The "Kho trò chơi" button (next to "Tự tạo trò chơi mới"); hidden while the store is empty. */
+/** The "Kho trò chơi" button (next to "Tự tạo trò chơi mới"), always there; the badge counts the games. */
 export function FamilyStoreButton({ onPlayGame, onCreateGame }: { onPlayGame: (game: Game) => void; onCreateGame?: () => void }) {
   const all = useFamilyGames()
   const [open, setOpen] = useState(false)
-  if (!all.length) return null
   return <>
-    <button className="family-store-btn" onClick={() => { playPop(); setOpen(true) }}><span aria-hidden="true">📦</span>Kho trò chơi<b>{all.length}</b></button>
+    <button className="family-store-btn" onClick={() => { playPop(); setOpen(true) }}><span aria-hidden="true">📦</span>Kho trò chơi{all.length > 0 && <b>{all.length}</b>}</button>
     {open && <FamilyStore list={all} onClose={() => setOpen(false)} onPlay={game => { setOpen(false); onPlayGame(game) }} onCreate={onCreateGame && (() => { setOpen(false); onCreateGame() })} />}
   </>
 }
@@ -63,9 +62,10 @@ function FamilyStore({ list, onClose, onPlay, onCreate }: { list: FamilyEntry[];
   return <div className="overlay family-store" role="dialog" aria-modal="true" aria-labelledby="store-title" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
     <div className="store-sheet">
       <header className="store-head">
-        <div><h2 id="store-title">📦 Kho trò chơi của nhà mình</h2><p>{list.length} trò · đang hiện {on} trò trên trang chủ. Bật nút bên cạnh để đưa trò ra trang chủ.</p></div>
+        <div><h2 id="store-title">📦 Kho trò chơi của nhà mình</h2><p>{list.length ? `${list.length} trò · đang hiện ${on} trò trên trang chủ. Bật nút bên cạnh để đưa trò ra trang chủ.` : 'Kho trên thiết bị này chưa có trò nào.'}</p></div>
         <button className="store-close" aria-label="Đóng kho" onClick={onClose}>✕</button>
       </header>
+      {!list.length && <div className="store-empty"><span aria-hidden="true">📦</span><b>Kho đang trống</b><p>Bấm “Tự tạo trò chơi mới”, tải ảnh của bé rồi chờ AI tạo xong: trò chơi sẽ vào kho này. Trò chơi được lưu trên từng thiết bị, nên trò tạo ở máy khác không hiện ở đây.</p></div>}
       <ul className="store-list">{list.map(e => {
         const visible = e.asset.target === 'home'
         return <li key={e.asset.id} className={visible ? 'on' : ''}>

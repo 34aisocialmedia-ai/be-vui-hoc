@@ -3880,3 +3880,5 @@ body.no-scroll { overflow: hidden; }
   .store-art { width: 84px; }
 }
 @media (max-width: 480px) { .family-head h2 { font-size: 1.12rem !important; } .family-store-btn { padding: 6px 12px; font-size: .82rem; } }
+.store-empty { display: grid; justify-items: center; gap: 4px; padding: 24px 16px; text-align: center; border: 2px dashed #f0dcc2; border-radius: 20px; background: #fff; }
+.store-empty span { font-size: 2.6rem; } .store-empty b { font-size: 1.05rem; color: #23324a; } .store-empty p { margin: 0; max-width: 420px; font-size: .86rem; line-height: 1.5; color: #7a6a58; }
