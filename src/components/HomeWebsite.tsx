@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useAssigned } from '../studio/media'
-import { useFamilyGames } from '../studio/familyGames'
-import { LearningPicture } from './LearningPicture'
+import { FamilyShelf } from './FamilyShelf'
 import type { AgeId, DomainId, Game, CurriculumCategory } from '../types'
 import { AGES } from '../types'
 import { gamesFor } from '../data/games'
@@ -87,7 +86,6 @@ export function GameLibrary({ age, domain = 'all', plays, onAgeChange, onPlayGam
 export function HomeWebsite({ onPlayGame, onOpenCollection, onOpenAdult, onCreateGame, totalCollected, sound, onToggleSound, age, onAgeChange, plays, doors }: Props) {
   const banner = useAssigned('banner')
   const hello = useAssigned('hello')
-  const family = useFamilyGames().filter(f => f.asset.target === 'home')
   // The banner's speaker plays the family's own greeting when a parent made one, else Cô Thủy's.
   const greet = () => {
     if (!sound) return
@@ -112,13 +110,7 @@ export function HomeWebsite({ onPlayGame, onOpenCollection, onOpenAdult, onCreat
       : <HomeBanner onHello={greet} />}
     <AgeSwitch age={age} onAgeChange={onAgeChange} />
     {doors}
-    {family.length > 0 && <section className="family-games" aria-label="Trò chơi của nhà mình">
-      <h2>Trò chơi của nhà mình</h2>
-      <div className="family-game-row">{family.map(({ asset, spec, game, cover }) => <button key={asset.id} className="family-game" aria-label={`Chơi ${spec.title}`} onClick={() => { playPop(); onPlayGame(game) }}>
-        <span className={`family-game-art${cover ? ' has-cover' : ''}`}>{cover ? <img src={cover} alt="" /> : <LearningPicture emoji={spec.icon} size={84} />}</span>
-        <b>{spec.title}</b><small>{spec.questions.length} câu · {AGES.find(a => a.id === spec.age)?.label}</small>
-      </button>)}</div>
-    </section>}
+    <FamilyShelf onPlayGame={onPlayGame} onCreateGame={onCreateGame} />
     <GameLibrary age={age} plays={plays} onAgeChange={onAgeChange} onPlayGame={onPlayGame} onCreateGame={onCreateGame} showAges={false} heading="Tất cả trò chơi"/>
     <footer className="kid-footer">Bé chơi vui · Bé lớn khôn</footer>
   </main>
