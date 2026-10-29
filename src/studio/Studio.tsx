@@ -43,7 +43,8 @@ function readCatalog(raw: unknown): Catalog {
   const r = (raw ?? {}) as Record<string, unknown>
   const list = (v: unknown) => Array.isArray(v) ? v as Record<string, unknown>[] : []
   const models = list(r.models ?? r.data).map(m => ({ id: String(m.id ?? m.model ?? ''), name: String(m.name ?? m.display_name ?? m.id ?? '') })).filter(m => m.id)
-  const voices = list(r.voices).map(v => ({ id: String(v.id ?? v.voice_id ?? v.name ?? ''), name: String(v.name ?? v.id ?? ''), note: [v.gender, v.description ?? v.style].filter(Boolean).join(' · ') || undefined })).filter(v => v.id)
+  // Voices may come as objects or as plain names ("Kore").
+  const voices = (Array.isArray(r.voices) ? r.voices as unknown[] : []).map(x => typeof x === 'string' ? { id: x, name: x, note: undefined } : (v => ({ id: String(v.id ?? v.voice_id ?? v.name ?? ''), name: String(v.name ?? v.id ?? ''), note: [v.gender, v.description ?? v.style].filter(Boolean).join(' · ') || undefined }))(x as Record<string, unknown>)).filter(v => v.id)
   return { models, voices, raw }
 }
 /** The credit total in a quote, whatever the field is called. */

@@ -115,3 +115,16 @@ test('every picture gets each person\'s 3D character first, then their real phot
   assert.match(prompt, /"Bé Na": real photos = reference images 1, 2, 3; approved 3D character design = reference image 4/)
   assert.match(characterPrompt('Bé Na', [1, 2], true), /LIKENESS IS THE TOP PRIORITY/)
 })
+
+test('when 34AI lists no chat model, game-plan tries the known chat models in turn', async () => {
+  const { Ai34Error } = await import('../lib/ai34.js')
+  const env = { AI34_API_KEY: '34ai_live_noChatListed_123' }
+  const tried = []
+  const fake = () => ({
+    listModels: async () => [{ id: 'nano-banana-2.1', media_type: 'image', capabilities: {} }],
+    chat: async req => { tried.push(req.model); if (req.model === 'gemini-3.8-flash-high') throw new Ai34Error('tắt', { status: 422, code: 'model_unavailable' }); return { choices: [{ message: { content: JSON.stringify(answer) } }] } },
+  })
+  const res = await handle(new Request('https://app.test/api/ai34/game-plan', { method: 'POST', headers: { Origin: 'https://app.test', 'Content-Type': 'application/json' }, body: JSON.stringify({ idea: 'Bé Na tự đánh răng, rửa tay và cất đồ chơi', age: '3-4', childName: 'Na', people, costAccepted: true }) }), env, fake)
+  assert.equal((await res.json()).model, 'gpt-6-astra')
+  assert.deepEqual(tried, ['gemini-3.8-flash-high', 'gpt-6-astra'])
+})

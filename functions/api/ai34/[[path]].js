@@ -2,12 +2,31 @@
 // The 34AI key is typed by a parent in the studio (stored in Cloudflare KV, see lib/keystore.js)
 // or set as the old secret AI34_API_KEY. It is never sent to the browser.
 //   AI34_CHAT_MODEL     optional: chat model id used to write games (default: the first chat model)
+//   AI34_TTS_MODEL      optional: voice model id (default: the first audio model 34AI lists, else 34AI's own default)
 import { Ai34Error, createAi34, friendly, publicJob } from '../../../lib/ai34.js'
 import { gameMessages, parseGame, parsePlan, planMessages, validateIdea, validatePlanRequest } from '../../../lib/family-game.js'
 import { access, deviceOf, publicState } from '../../../lib/keystore.js'
 import { safePrompt } from '../../../lib/safe-prompt.js'
 
 export { safePrompt }
+/** Chat models known on 34AI, tried when its model list shows none (the list can leave chat models out). */
+const KNOWN_CHAT = ['gemini-3.8-flash-high', 'gpt-6-astra']
+const MODEL_GONE = new Set(['model_unavailable', 'model_not_found', 'invalid_model', 'model_disabled', 'unknown_model'])
+
+/** Write with the first chat model that answers: the wanted one, the listed ones (flash first), then known ids. */
+async function chatWith(ai, env, wanted, build) {
+  const listed = (await ai.listModels()).filter(m => m.media_type === 'chat' || m.media_type === 'text')
+  const order = [...new Set([wanted, env.AI34_CHAT_MODEL, ...listed.filter(m => /flash/i.test(m.id)).map(m => m.id), ...listed.map(m => m.id), ...KNOWN_CHAT].filter(Boolean))]
+  let last
+  for (const id of order) {
+    const caps = listed.find(m => m.id === id)?.capabilities ?? {}
+    try { return { id, reply: await ai.chat(build(id, caps)) } } catch (e) {
+      last = e
+      if (!(e instanceof Ai34Error) || !(MODEL_GONE.has(e.code) || e.status === 404 || e.status === 422)) throw e
+    }
+  }
+  throw last ?? fail('34AI hiện chưa bật model chat (dùng để soạn trò chơi) cho khóa này.', 503, 'model_unavailable')
+}
 const MAX_JSON = 64 * 1024
 const MAX_REFERENCE = 10 * 1024 * 1024
 const MAX_FILE = 60 * 1024 * 1024
@@ -119,31 +138,26 @@ export async function handle(request, env, makeClient = createAi34) {
     case 'audio-generate': {
       const body = await readJson(request)
       if (body.costAccepted !== true) throw fail('Người lớn cần đồng ý trừ credit trước khi tạo giọng nói.', 400, 'consent_required')
-      const job = await ai.createSpeech({ model: body.model, text: body.text, voiceId: body.voiceId, instruction: body.instruction ?? '', languageCode: body.languageCode ?? 'vi-VN' }, idempotencyKey(body))
+      const audioModel = body.model || env.AI34_TTS_MODEL || (await ai.listModels()).find(m => m.media_type === 'audio')?.id
+      const job = await ai.createSpeech({ model: audioModel, text: body.text, voiceId: body.voiceId, instruction: body.instruction ?? '', languageCode: body.languageCode ?? 'vi-VN' }, idempotencyKey(body))
       return json(publicJob(job), 202)
     }
     case 'game': {
       const body = await readJson(request)
       if (body.costAccepted !== true) throw fail('Người lớn cần đồng ý trừ credit trước khi tạo trò chơi.', 400, 'consent_required')
       const idea = validateIdea(body)
-      const chats = (await ai.listModels()).filter(m => m.media_type === 'chat')
-      const chosen = chats.find(m => m.id === (body.model || env.AI34_CHAT_MODEL)) ?? chats[0]
-      if (!chosen) throw fail(friendly('model_unavailable'), 503, 'model_unavailable')
-      const reply = await ai.chat({ model: chosen.id, messages: gameMessages(idea), max_tokens: Math.min(3000, chosen.capabilities?.max_output_tokens ?? 3000), temperature: 0.7 })
+      const { id, reply } = await chatWith(ai, env, body.model, (model, caps) => ({ model, messages: gameMessages(idea), max_tokens: Math.min(3000, caps.max_output_tokens ?? 3000), temperature: 0.7 }))
       const game = parseGame(reply.choices?.[0]?.message?.content, idea)
-      return json({ game, credits: reply.credits_charged ?? null, model: chosen.id })
+      return json({ game, credits: reply.credits_charged ?? null, model: id })
     }
     case 'game-plan': {
       // "Game with my child": the script plus the scenes (featuring the child/family) the browser will have drawn.
       const body = await readJson(request)
       if (body.costAccepted !== true) throw fail('Người lớn cần đồng ý trừ credit trước khi tạo trò chơi.', 400, 'consent_required')
       const req = validatePlanRequest(body)
-      const chats = (await ai.listModels()).filter(m => m.media_type === 'chat')
-      const chosen = chats.find(m => m.id === (body.model || env.AI34_CHAT_MODEL)) ?? chats.find(m => /flash/i.test(m.id)) ?? chats[0]
-      if (!chosen) throw fail(friendly('model_unavailable'), 503, 'model_unavailable')
-      const reply = await ai.chat({ model: chosen.id, messages: planMessages(req), max_tokens: Math.min(4000, chosen.capabilities?.max_output_tokens ?? 4000), temperature: 0.7 })
+      const { id, reply } = await chatWith(ai, env, body.model, (model, caps) => ({ model, messages: planMessages(req), max_tokens: Math.min(4000, caps.max_output_tokens ?? 4000), temperature: 0.7 }))
       const plan = parsePlan(reply.choices?.[0]?.message?.content, req)
-      return json({ plan, credits: reply.credits_charged ?? null, model: chosen.id })
+      return json({ plan, credits: reply.credits_charged ?? null, model: id })
     }
   }
   return json({ error: 'Không tìm thấy chức năng.' }, 404)
